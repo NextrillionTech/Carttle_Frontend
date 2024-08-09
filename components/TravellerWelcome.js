@@ -11,7 +11,7 @@ const fetchFonts = () => {
 
 const { width, height } = Dimensions.get('window');
 
-const carImage = require('../assets/travel.jpg');
+const carImage = require('../assets/travel.png');
 
 const TravellerWelcome = () => {
   const navigation = useNavigation();

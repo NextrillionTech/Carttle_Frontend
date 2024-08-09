@@ -42,10 +42,20 @@ const DriverLogin = () => {
     Animated.timing(animation, {
       toValue: 0,
       duration: 300,
-      easing: Animated.Easing.easeInOut,
       useNativeDriver: true,
     }).start(() => {
       navigation.navigate('DriverSignUp');
+    });
+  };
+
+  
+  const handleLogin = () => {
+    Animated.timing(animation, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      navigation.navigate('HomeScreen');
     });
   };
 
@@ -97,7 +107,7 @@ const DriverLogin = () => {
             <Text style={styles.signUpText}>Didn't receive the OTP?</Text>
             <Text style={styles.signUpLink}>Resend it</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.common1Button} onPress={() => {}}>
+          <TouchableOpacity style={styles.common1Button} onPress={handleLogin}>
             <Text style={styles.buttonText}>Log In</Text>
           </TouchableOpacity>
         </View>

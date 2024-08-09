@@ -1,6 +1,8 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import MapView, { Marker, UrlTile } from 'react-native-maps';
+import * as Location from 'expo-location';
 import OpeningScreen from './components/OpeningScreen';
 import InitialScreens from './components/InitialScreens';
 import LocationScreen from './components/LocationScreen';
@@ -9,6 +11,9 @@ import TravellerWelcome from './components/TravellerWelcome';
 import DriverWelcome from './components/DriverWelcome';
 import DriverLogin from './components/DriverLogin';
 import DriverSignup from './components/DriverSignup';
+import HomeScreen from './components/HomeScreen';
+import  RideScreen from './components/RideScreen'; 
+import MessageScreen from './components/MessageScreen'; 
  
 
 
@@ -26,6 +31,7 @@ function App() {
         <Stack.Screen name='DriverWelcome' component={DriverWelcome} options={{headerShown: false}}  />
         <Stack.Screen name='DriverLogin' component={DriverLogin} options={{headerShown: false}}  />
         <Stack.Screen name='DriverSignup' component={DriverSignup} options={{headerShown: false}} />
+        <Stack.Screen name='HomeScreen' component={HomeScreen} options={{headerShown:false}} />
       </Stack.Navigator>
     </NavigationContainer>
   );

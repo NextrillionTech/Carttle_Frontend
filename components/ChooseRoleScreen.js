@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Image, Animated, Easing } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import AppLoading from 'expo-app-loading';
 import * as Font from 'expo-font';
 
 const fetchFonts = () => {
@@ -56,11 +55,8 @@ const ChooseRoleScreen = () => {
         }),
       ]).start();
     }
-  }, [fontsLoaded]);
+  });
 
-  if (!fontsLoaded) {
-    return <AppLoading />;
-  }
 
   const handleTravelerPress = () => {
     navigation.navigate('TravellerWelcome');

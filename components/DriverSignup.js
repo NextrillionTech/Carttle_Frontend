@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Dimensions, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as Font from 'expo-font';
-import AppLoading from 'expo-app-loading';
 import DropDownPicker from 'react-native-dropdown-picker';
 
 const { width, height } = Dimensions.get('window');
@@ -81,10 +80,7 @@ const DriverSignup = () => {
     }
   };
 
-  if (!fontLoaded) {
-    return <AppLoading />;
-  }
-
+  
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
       <View style={styles.container}>

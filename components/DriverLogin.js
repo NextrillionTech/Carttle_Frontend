@@ -1,8 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Animated, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import * as Font from 'expo-font';
-import AppLoading from 'expo-app-loading';
 import { useFonts } from 'expo-font';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -19,9 +17,6 @@ const DriverLogin = () => {
     'poppins-medium': require('../assets/Poppins-Medium.ttf'),
   });
 
-  if (!fontsLoaded) {
-    return <AppLoading />;
-  }
 
   const handleSendOtp = () => {
     setShowOtpInput(true);

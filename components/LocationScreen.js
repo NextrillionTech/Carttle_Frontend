@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, ImageBackground, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as Font from 'expo-font';
-import AppLoading from 'expo-app-loading';
 
 const { width, height } = Dimensions.get('window');
 
@@ -31,9 +30,6 @@ const LocationScreen = () => {
     navigation.navigate('ChooseRole');
   };
 
-  if (!fontLoaded) {
-    return <AppLoading />;
-  }
 
   return (
     <ImageBackground 

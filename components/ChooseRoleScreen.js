@@ -1,11 +1,10 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Image, Animated, Easing } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import AppLoading from 'expo-app-loading';
-import * as Font from 'expo-font';
+import { useFonts }  from 'expo-font';
 
 const fetchFonts = () => {
-  return Font.loadAsync({
+  return loadAsync({
     'poppins-medium': require('../assets/Poppins-Medium.ttf'),
   });
 };
@@ -15,20 +14,15 @@ const carImage = require('../assets/car-image.png');
 
 const ChooseRoleScreen = () => {
   const navigation = useNavigation();
-  const [fontsLoaded, setFontsLoaded] = React.useState(false);
+  const [setFontsLoaded] = React.useState(false);
 
   // Animation values
   const buttonsPosition = new Animated.Value(-200); // Start off-screen at the top
   const imageOpacity = new Animated.Value(0);
   const titleOpacity = new Animated.Value(0);
-
-  React.useEffect(() => {
-    async function loadFonts() {
-      await fetchFonts();
-      setFontsLoaded(true);
-    }
-    loadFonts();
-  }, []);
+  let [fontsLoaded] = useFonts({
+    'poppins-medium': require('../assets/Poppins-Medium.ttf'),
+  });
 
   React.useEffect(() => {
     if (fontsLoaded) {
@@ -56,11 +50,7 @@ const ChooseRoleScreen = () => {
         }),
       ]).start();
     }
-  }, [fontsLoaded]);
-
-  if (!fontsLoaded) {
-    return <AppLoading />;
-  }
+  });
 
   const handleTravelerPress = () => {
     navigation.navigate('TravellerWelcome');

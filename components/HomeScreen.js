@@ -150,15 +150,18 @@ const HomeScreen = ({ navigation }) => {
   const selectSuggestion = (suggestion) => {
     setSearchQuery(suggestion.place_name);
     setModalVisible(false);
+  
+    // Navigate to the MapRouteScreen with the selected destination
+    navigation.navigate('MapScreen', {
+      destination: {
+        latitude: suggestion.geometry.coordinates[1],
+        longitude: suggestion.geometry.coordinates[0],
+        placeName: suggestion.place_name,
+      },
+      userLocation,
+    });
   };
-
-  if (!region && !errorMsg) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
-      </View>
-    );
-  }
+  
 
   if (errorMsg) {
     return (

@@ -14,6 +14,7 @@ import DriverSignup from "./components/DriverSignup";
 import HomeScreen from "./components/HomeScreen";
 import RideScreen from "./components/RideScreen";
 import MessageScreen from "./components/MessageScreen";
+import MapScreen from "./components/MapScreen";
 
 const Stack = createStackNavigator();
 
@@ -64,6 +65,11 @@ function App() {
         <Stack.Screen
           name="HomeScreen"
           component={HomeScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="MapScreen"
+          component={MapScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

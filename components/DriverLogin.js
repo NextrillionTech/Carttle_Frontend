@@ -54,6 +54,11 @@ const DriverLogin = () => {
     });
   };
 
+  
+  const handleSignupPress = () => {
+    navigation.navigate('DriverSignup');
+  };
+
   const handleChangeOtp = (text, index) => {
     const newOtp = [...otp];
     newOtp[index] = text;
@@ -124,7 +129,7 @@ const DriverLogin = () => {
         <Image source={require('../assets/apple.png')} style={styles.socialIcon2} />
         <Text style={styles.socialButtonText}>Log in with Apple</Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={handleSignUp} style={styles.signUpContainer}>
+      <TouchableOpacity onPress={handleSignUp} style={styles.signUpContainer} onPress={handleSignupPress}>
         <Text style={styles.signUpText}>Don't have an account? </Text>
         <Text style={styles.signUpLink}>Sign Up</Text>
       </TouchableOpacity>

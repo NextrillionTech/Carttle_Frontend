@@ -80,6 +80,12 @@ const DriverSignup = () => {
     }
   };
 
+  const handleDriverPress = () => {
+    navigation.navigate('DriverLogin');
+  
+  };
+
+
   
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -173,7 +179,9 @@ const DriverSignup = () => {
             <Text style={styles.socialButtonText}>Apple</Text>
           </TouchableOpacity>
         </View>
+        <TouchableOpacity onPress={handleDriverPress}>
         <Text style={styles.footerText}>Already have an account? <Text style={styles.signInLink}>Sign in</Text></Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );

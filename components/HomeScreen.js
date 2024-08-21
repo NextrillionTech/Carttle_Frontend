@@ -10,6 +10,8 @@ import {
   Modal,
   TextInput,
   FlatList,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from "react-native";
 import MapView, { Marker, UrlTile } from "react-native-maps";
 import * as Location from "expo-location";
@@ -150,9 +152,9 @@ const HomeScreen = ({ navigation }) => {
   const selectSuggestion = (suggestion) => {
     setSearchQuery(suggestion.place_name);
     setModalVisible(false);
-  
+
     // Navigate to the MapRouteScreen with the selected destination
-    navigation.navigate('MapScreen', {
+    navigation.navigate("MapScreen", {
       destination: {
         latitude: suggestion.geometry.coordinates[1],
         longitude: suggestion.geometry.coordinates[0],
@@ -161,7 +163,6 @@ const HomeScreen = ({ navigation }) => {
       userLocation,
     });
   };
-  
 
   if (errorMsg) {
     return (
@@ -178,7 +179,7 @@ const HomeScreen = ({ navigation }) => {
         {userLocation && (
           <Marker coordinate={userLocation} title="You are here">
             <Image
-              source={require("../assets/map1.png")}
+              source={require("../assets/location_icon.png")}
               style={styles.markerIcon}
             />
           </Marker>
@@ -256,43 +257,52 @@ const HomeScreen = ({ navigation }) => {
       )}
 
       <Modal visible={modalVisible} animationType="slide">
-        <View style={styles.horizontalRuler1} />
-        <View style={styles.modalContainer}>
-          <Text style={styles.heading}>Select address</Text>
-          <View style={styles.horizontalRuler} />
+        <TouchableWithoutFeedback
+          onPress={() => {
+            setModalVisible(false); // Close the modal on outside touch
+            Keyboard.dismiss(); // Dismiss the keyboard if it's open
+          }}
+        >
+          <View style={styles.modalBackground}>
+            <View style={styles.horizontalRuler1} />
+            <View style={styles.modalContainer}>
+              <Text style={styles.heading}>Select address</Text>
+              <View style={styles.horizontalRuler} />
 
-          <View style={styles.searchContainer}>
-            <Image
-              source={require("../assets/loc.png")}
-              style={styles.searchIcon}
-            />
-            <Text style={styles.currentLocationText}>{placeName}</Text>
+              <View style={styles.searchContainer}>
+                <Image
+                  source={require("../assets/loc.png")}
+                  style={styles.searchIcon}
+                />
+                <Text style={styles.currentLocationText}>{placeName}</Text>
+              </View>
+              <View style={styles.searchContainer}>
+                <Image
+                  source={require("../assets/loc.png")}
+                  style={styles.searchIcon}
+                />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search for a place"
+                  value={searchQuery}
+                  onChangeText={handleSearch}
+                />
+              </View>
+              <FlatList
+                data={suggestions}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.suggestionItem}
+                    onPress={() => selectSuggestion(item)}
+                  >
+                    <Text style={styles.suggestionText}>{item.place_name}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
           </View>
-          <View style={styles.searchContainer}>
-            <Image
-              source={require("../assets/loc.png")}
-              style={styles.searchIcon}
-            />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search for a place"
-              value={searchQuery}
-              onChangeText={handleSearch}
-            />
-          </View>
-          <FlatList
-            data={suggestions}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.suggestionItem}
-                onPress={() => selectSuggestion(item)}
-              >
-                <Text style={styles.suggestionText}>{item.place_name}</Text>
-              </TouchableOpacity>
-            )}
-          />
-        </View>
+        </TouchableWithoutFeedback>
       </Modal>
     </View>
   );
@@ -333,6 +343,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  modalBackground: {
+    flex: 1,
+    backgroundColor: "transparent",
+  },
   errorText: {
     fontSize: 16,
     color: "red",
@@ -341,7 +355,6 @@ const styles = StyleSheet.create({
   markerIcon: {
     width: 80,
     height: 80,
-    resizeMode: "contain",
   },
   icon: {
     position: "absolute",

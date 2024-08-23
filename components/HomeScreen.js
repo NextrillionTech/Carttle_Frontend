@@ -15,12 +15,11 @@ import {
 } from "react-native";
 import MapView, { Marker, UrlTile } from "react-native-maps";
 import * as Location from "expo-location";
-import axios from "axios"; // Import axios
+import axios from "axios";
 import BottomNav from "./BottomNav";
 import * as Font from "expo-font";
 
 const fetchFonts = () => {
-  x;
   return Font.loadAsync({
     poppins: require("../assets/Poppins-Medium.ttf"),
   });

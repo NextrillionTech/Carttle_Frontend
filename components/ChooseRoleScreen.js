@@ -1,33 +1,32 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Image, Animated, Easing } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import * as Font from 'expo-font';
+import React from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+  Image,
+  Animated,
+  Easing,
+} from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { useFonts } from "expo-font";
 
-const fetchFonts = () => {
-  return Font.loadAsync({
-    'poppins-medium': require('../assets/Poppins-Medium.ttf'),
-  });
-};
-
-const { width, height } = Dimensions.get('window');
-const carImage = require('../assets/car-image.png');
+const { width, height } = Dimensions.get("window");
+const carImage = require("../assets/car-image.png");
 
 const ChooseRoleScreen = () => {
   const navigation = useNavigation();
-  const [fontsLoaded, setFontsLoaded] = React.useState(false);
 
   // Animation values
   const buttonsPosition = new Animated.Value(-200); // Start off-screen at the top
   const imageOpacity = new Animated.Value(0);
   const titleOpacity = new Animated.Value(0);
 
-  React.useEffect(() => {
-    async function loadFonts() {
-      await fetchFonts();
-      setFontsLoaded(true);
-    }
-    loadFonts();
-  }, []);
+  // Load fonts
+  const [fontsLoaded] = useFonts({
+    "poppins-medium": require("../assets/Poppins-Medium.ttf"),
+  });
 
   React.useEffect(() => {
     if (fontsLoaded) {
@@ -55,16 +54,19 @@ const ChooseRoleScreen = () => {
         }),
       ]).start();
     }
-  });
-
+  }, [fontsLoaded]); // Run animation only after fonts are loaded
 
   const handleTravelerPress = () => {
-    navigation.navigate('TravellerWelcome');
+    navigation.navigate("TravellerWelcome");
   };
 
   const handleDriverPress = () => {
-    navigation.navigate('DriverWelcome');
+    navigation.navigate("DriverWelcome");
   };
+
+  if (!fontsLoaded) {
+    return null; // Optionally, return a loading indicator here
+  }
 
   return (
     <View style={styles.container}>
@@ -73,17 +75,29 @@ const ChooseRoleScreen = () => {
       </Animated.View>
       <Animated.View style={[styles.textContainer, { opacity: titleOpacity }]}>
         <Text style={styles.title}>How do you want to continue as?</Text>
-        <Text style={styles.subtitle}>You can login as a driver or a traveler, select any one to continue</Text>
+        <Text style={styles.subtitle}>
+          You can login as a driver or a traveler, select any one to continue
+        </Text>
       </Animated.View>
-      <Animated.View style={[styles.buttonContainer, {
-        transform: [{
-          translateY: buttonsPosition,
-        }]
-      }]}>
+      <Animated.View
+        style={[
+          styles.buttonContainer,
+          {
+            transform: [
+              {
+                translateY: buttonsPosition,
+              },
+            ],
+          },
+        ]}
+      >
         <TouchableOpacity style={styles.button} onPress={handleTravelerPress}>
           <Text style={styles.buttonText}>Traveler</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.outlineButton} onPress={handleDriverPress}>
+        <TouchableOpacity
+          style={styles.outlineButton}
+          onPress={handleDriverPress}
+        >
           <Text style={styles.outlineButtonText}>Driver</Text>
         </TouchableOpacity>
       </Animated.View>
@@ -94,74 +108,74 @@ const ChooseRoleScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingVertical: 40, // Reduced padding to move content up
-    backgroundColor: '#ffff',
+    backgroundColor: "#ffff",
   },
   imageContainer: {
-    width: '100%',
-    height: height * 0.30, // Adjusted height to move content up
-    overflow: 'hidden',
+    width: "100%",
+    height: height * 0.3, // Adjusted height to move content up
+    overflow: "hidden",
     marginBottom: 15, // Reduced margin to move content up
   },
   image: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   textContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingHorizontal: 20,
     marginBottom: 15, // Reduced margin to move content up
   },
   title: {
     fontSize: width * 0.06,
-    color: '#292929',
-    textAlign: 'center',
+    color: "#292929",
+    textAlign: "center",
     marginBottom: 10, // Reduced margin to move content up
-    fontFamily: 'poppins-medium',
+    fontFamily: "poppins-medium",
   },
   subtitle: {
     fontSize: width * 0.04,
-    textAlign: 'center',
-    color: '#888',
-    fontFamily: 'poppins-medium',
+    textAlign: "center",
+    color: "#888",
+    fontFamily: "poppins-medium",
   },
   buttonContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 30, // Adjusted position to move content up
     marginBottom: 20,
-    width: '100%',
-    alignItems: 'center',
+    width: "100%",
+    alignItems: "center",
   },
   button: {
     width: width * 0.8,
     height: 54,
-    backgroundColor: 'black',
+    backgroundColor: "black",
     borderRadius: 10,
-    marginBottom: 10, 
+    marginBottom: 10,
     paddingVertical: 15,
-    alignItems: 'center',
+    alignItems: "center",
   },
   buttonText: {
-    color: 'white',
+    color: "white",
     fontSize: 16,
-    fontFamily: 'poppins-medium',
+    fontFamily: "poppins-medium",
   },
   outlineButton: {
-    borderColor: 'black',
+    borderColor: "black",
     borderWidth: 1,
     borderRadius: 10,
     width: width * 0.8,
     height: 54,
     paddingVertical: 15,
-    alignItems: 'center',
-    marginTop: 10, 
+    alignItems: "center",
+    marginTop: 10,
   },
   outlineButtonText: {
-    color: 'black',
+    color: "black",
     fontSize: 16,
-    fontFamily: 'poppins-medium',
+    fontFamily: "poppins-medium",
   },
 });
 

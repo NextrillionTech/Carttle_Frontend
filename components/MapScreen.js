@@ -6,6 +6,7 @@ import {
   Text,
   Image,
   Dimensions,
+  TouchableOpacity,
 } from "react-native";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import * as Location from "expo-location";
@@ -15,7 +16,15 @@ import {
   PanGestureHandler,
   State,
 } from "react-native-gesture-handler";
-import Animated, { useSharedValue, withSpring } from "react-native-reanimated";
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
+import * as Font from "expo-font";
+
+const fetchFonts = () => {
+  x;
+  return Font.loadAsync({
+    poppins: require("../assets/Poppins-Medium.ttf"),
+  });
+};
 
 const { height } = Dimensions.get("window");
 
@@ -27,6 +36,10 @@ const MapScreen = ({ route }) => {
   const { destination } = route.params;
 
   const translateY = useSharedValue(0);
+  const [commuteRegularly, setCommuteRegularly] = useState(false);
+
+  const toggleValue = useSharedValue(commuteRegularly ? 1 : 0);
+  const [seatsAvailable, setSeatsAvailable] = useState(1);
 
   useEffect(() => {
     (async () => {
@@ -101,6 +114,23 @@ const MapScreen = ({ route }) => {
     }
   };
 
+  const toggleStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: withSpring(toggleValue.value * 25) }],
+  }));
+
+  const handleToggle = () => {
+    setCommuteRegularly((prevState) => !prevState);
+    toggleValue.value = commuteRegularly ? 0 : 1;
+  };
+
+  const incrementSeats = () => {
+    setSeatsAvailable((prev) => prev + 1);
+  };
+
+  const decrementSeats = () => {
+    setSeatsAvailable((prev) => (prev > 1 ? prev - 1 : 1));
+  };
+
   if (loading) {
     return (
       <View style={styles.container}>
@@ -173,7 +203,6 @@ const MapScreen = ({ route }) => {
             </Text>
           </View>
           <View style={styles.cardContent}>
-            {/* Your card content here */}
             <View style={styles.driverInfo}>
               <Image
                 source={require("../assets/driver_avatar.png")}
@@ -194,10 +223,26 @@ const MapScreen = ({ route }) => {
               />
             </View>
             <View style={styles.detailsRow}>
+              <Image
+                source={require("../assets/seat_icon.png")}
+                style={styles.detailsIcon}
+              />
               <Text style={styles.detailsLabel}>Seats Available</Text>
-              <Text style={styles.detailsValue}>1 seat(s)</Text>
+              <View style={styles.seatControlContainer}>
+                <TouchableOpacity onPress={decrementSeats} style={styles.seatButton}>
+                  <Text style={styles.seatButtonText}>-</Text>
+                </TouchableOpacity>
+                <Text style={styles.detailsValue}>{seatsAvailable} seat(s)</Text>
+                <TouchableOpacity onPress={incrementSeats} style={styles.seatButton}>
+                  <Text style={styles.seatButtonText}>+</Text>
+                </TouchableOpacity>
+              </View>
             </View>
             <View style={styles.detailsRow}>
+              <Image
+                source={require("../assets/money_icon.png")}
+                style={styles.detailsIcon}
+              />
               <Text style={styles.detailsLabel}>Amount Per Seat</Text>
               <Text style={styles.detailsValue}>₹100.00</Text>
             </View>
@@ -205,7 +250,24 @@ const MapScreen = ({ route }) => {
               <Text style={styles.detailsLabel}>
                 Do you commute to this destination regularly?
               </Text>
-              <Text style={styles.detailsValue}>No</Text>
+              <TouchableOpacity
+      style={styles.toggleContainer}
+      onPress={handleToggle}
+    >
+      <View style={styles.ovalShape}>
+        <Animated.View
+          style={[styles.toggleCircle, toggleStyle]}
+        />
+        <View style={styles.textContainer}>
+        <Text style={styles.toggleText}>
+        {commuteRegularly ? "Yes" : ""}
+      </Text>
+      <Text style={styles.toggleText}>
+        {commuteRegularly ? "" : "No"}
+      </Text>
+        </View>
+      </View>
+    </TouchableOpacity>
             </View>
             <View style={styles.confirmButtonContainer}>
               <Text style={styles.confirmButtonText}>Confirm Details</Text>
@@ -227,108 +289,157 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
   },
   icon: {
-    width: 30,
-    height: 30,
+    width: 24,
+    height: 24,
   },
   topLeftIcon: {
     position: "absolute",
     top: 40,
-    left: 10,
+    left: 20,
     width: 40,
     height: 40,
-    zIndex: 1,
   },
   topRightIcon: {
     position: "absolute",
     top: 40,
-    right: 10,
+    right: 20,
     width: 40,
     height: 40,
-    zIndex: 1,
   },
+
+ 
   card: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: height / 2,
-    backgroundColor: "#ffffff",
+    width: "100%",
+    height: "45%",
+    backgroundColor: "#fff",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    padding: 20,
-    zIndex: 2,
+    padding: 16,
+    position: "absolute",
+    bottom: 0,
+    elevation: 5,
   },
   cardHeader: {
-    alignItems: "center",
     marginBottom: 10,
+    textAlign: 'center',
   },
   cardTitle: {
     fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
+    fontFamily: "poppins",
   },
   cardContent: {
-    flex: 1,
-    justifyContent: "space-between",
+    paddingVertical: 10,
   },
   driverInfo: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: 10,
   },
   driverAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 60,
+    height: 60,
+    borderRadius: 15,
     marginRight: 10,
   },
   driverName: {
-    fontWeight: "bold",
-    fontSize: 16,
-    color: "#333",
+    fontFamily: "poppins",
   },
   driverLocation: {
-    fontSize: 14,
-    color: "#777",
+    color: "#666",
   },
   carImage: {
-    width: 60,
-    height: 60,
+    width: 50,
+    height: 50,
+    marginLeft: "auto",
   },
   detailsRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginVertical: 5,
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  detailsIcon: {
+    width: 24,
+    height: 24,
+    marginRight: 10,
   },
   detailsLabel: {
-    fontSize: 14,
-    color: "#333",
+    fontFamily: "poppins",
+    flex: 1,
   },
   detailsValue: {
-    fontSize: 14,
-    color: "#777",
+    color: "#333",
   },
-  confirmButtonContainer: {
-    backgroundColor: "#000",
-    paddingVertical: 10,
-    borderRadius: 10,
+  seatControlContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop:10,
+  },
+  seatButton: {
+    backgroundColor: "#000000",
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    justifyContent: "center",
+    alignItems: "center",
+    marginHorizontal: 5,
+  },
+  seatButtonText: {
+    fontSize: 18,
+    fontFamily: "poppins",
+    color: "#FFFFFF",
+  },
+  toggleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginRight: 40,
+    backgroundColor: "#7C7C7C",
+    color:"7C7C7C",
+    marginTop: 10,
+  },
+  toggleContainer: {
+    flexDirection: "row",
     alignItems: "center",
     marginTop: 10,
   },
+  ovalShape: {
+    backgroundColor: '#7C7C7C',
+    borderRadius: 15,
+    height: 30,
+    width: 60,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 5,
+  },
+  toggleCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 15,
+    backgroundColor: "#FFFFFF",
+    position: "absolute",
+    left: 5, // Start position (for 'Yes')
+  },
+  toggleText: {
+    color: "#ffffff",
+    fontFamily: "poppins",
+    flexDirection: "row",
+    fontSize: 12,
+    flex: 1,
+  },
+  confirmButtonContainer: {
+    marginTop: 20,
+    backgroundColor: "#000000",
+    paddingVertical: 10,
+    borderRadius: 5,
+    alignItems: "center",
+  },
   confirmButtonText: {
     color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "poppins",
   },
   errorText: {
-    color: "black",
-    fontSize: 16,
-    textAlign: "center",
-    margin: 10,
+    color: "red",
+    marginTop: 10,
   },
 });
 

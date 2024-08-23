@@ -294,14 +294,14 @@ const styles = StyleSheet.create({
   },
   topLeftIcon: {
     position: "absolute",
-    top: 40,
+    top: 48,
     left: 20,
     width: 40,
     height: 40,
   },
   topRightIcon: {
     position: "absolute",
-    top: 40,
+    top: 48,
     right: 20,
     width: 40,
     height: 40,
@@ -326,6 +326,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontFamily: "poppins",
+    textAlign: 'center',
   },
   cardContent: {
     paddingVertical: 10,
@@ -365,6 +366,7 @@ const styles = StyleSheet.create({
   detailsLabel: {
     fontFamily: "poppins",
     flex: 1,
+    fontSize: 16,
   },
   detailsValue: {
     color: "#333",
@@ -372,13 +374,13 @@ const styles = StyleSheet.create({
   seatControlContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop:10,
+    marginTop:1,
   },
   seatButton: {
     backgroundColor: "#000000",
     borderRadius: 15,
-    width: 30,
-    height: 30,
+    width: 25,
+    height: 25,
     justifyContent: "center",
     alignItems: "center",
     marginHorizontal: 5,
@@ -391,19 +393,18 @@ const styles = StyleSheet.create({
   toggleContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginRight: 40,
+    marginRight: 15,
+    borderRadius:30,
     backgroundColor: "#7C7C7C",
     color:"7C7C7C",
     marginTop: 10,
   },
-  toggleContainer: {
+  textContainer: {
     flexDirection: "row",
-    alignItems: "center",
-    marginTop: 10,
   },
   ovalShape: {
     backgroundColor: '#7C7C7C',
-    borderRadius: 15,
+    borderRadius: 25,
     height: 30,
     width: 60,
     flexDirection: 'row',

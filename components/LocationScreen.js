@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import * as Font from "expo-font";
+import * as Location from "expo-location";
 
 const { width, height } = Dimensions.get("window");
 
@@ -34,7 +35,15 @@ const LocationScreen = () => {
     loadFonts();
   }, []);
 
-  const handleLocationPress = () => {
+  const handleLocationPress = async () => {
+    let { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== "granted") {
+      alert("Permission to access location was denied");
+      return;
+    }
+
+    let location = await Location.getCurrentPositionAsync({});
+    console.log(location);
     navigation.navigate("ChooseRole");
   };
 
@@ -43,7 +52,9 @@ const LocationScreen = () => {
       <View style={styles.overlay} />
       <View style={styles.container}>
         <View style={styles.card}>
-          <Image source={locationIcon} style={styles.icon} />
+          <TouchableOpacity onPress={handleLocationPress}>
+            <Image source={locationIcon} style={styles.icon} />
+          </TouchableOpacity>
           <Text style={styles.title1}>Enable your location</Text>
           <Text style={styles.subtitle}>
             Choose your location to find travelers around you

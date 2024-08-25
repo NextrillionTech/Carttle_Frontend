@@ -11,6 +11,7 @@ import {
 import MapView, { Marker, Polyline } from "react-native-maps";
 import * as Location from "expo-location";
 import axios from "axios";
+import BottomNav from "./BottomNav";
 import {
   GestureDetector,
   PanGestureHandler,
@@ -34,12 +35,12 @@ const MapScreen = ({ route }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { destination } = route.params;
-
+  const [activeTab, setActiveTab] = useState("home");
   const translateY = useSharedValue(0);
   const [commuteRegularly, setCommuteRegularly] = useState(false);
-
   const toggleValue = useSharedValue(commuteRegularly ? 1 : 0);
   const [seatsAvailable, setSeatsAvailable] = useState(1);
+  const [amountPerSeat, setAmountPerSeat] = useState(100); // Initial amount per seat
 
   useEffect(() => {
     (async () => {
@@ -95,6 +96,16 @@ const MapScreen = ({ route }) => {
       setLoading(false);
     }
   };
+  const handleTabPress = (tab) => {
+    setActiveTab(tab);
+    if (tab === "home") {
+      navigation.navigate("HomeScreen");
+    } else if (tab === "rides") {
+      navigation.navigate("RidesScreen");
+    } else if (tab === "message") {
+      navigation.navigate("MessageScreen");
+    }
+  };
 
   const panGesture = (event) => {
     const { nativeEvent } = event;
@@ -114,6 +125,7 @@ const MapScreen = ({ route }) => {
     }
   };
 
+ 
   const toggleStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: withSpring(toggleValue.value * 25) }],
   }));
@@ -123,12 +135,21 @@ const MapScreen = ({ route }) => {
     toggleValue.value = commuteRegularly ? 0 : 1;
   };
 
+
   const incrementSeats = () => {
     setSeatsAvailable((prev) => prev + 1);
   };
 
   const decrementSeats = () => {
     setSeatsAvailable((prev) => (prev > 1 ? prev - 1 : 1));
+  };
+
+  const incrementAmount = () => {
+    setAmountPerSeat((prev) => prev + 10);
+  };
+
+  const decrementAmount = () => {
+    setAmountPerSeat((prev) => (prev > 10 ? prev - 10 : 10));
   };
 
   if (loading) {
@@ -161,12 +182,12 @@ const MapScreen = ({ route }) => {
           >
             <Image
               source={require("../assets/car_loc.png")}
-              style={styles.icon}
+              style={styles.icon1}
             />
           </Marker>
           <Marker coordinate={destination} title="Destination">
             <Image
-              source={require("../assets/location_icon.png")}
+              source={require("../assets/curr_loc.png")}
               style={styles.icon}
             />
           </Marker>
@@ -198,12 +219,15 @@ const MapScreen = ({ route }) => {
           ]}
         >
           <View style={styles.cardHeader}>
+            <View style={styles.horizontalRuler1} />
             <Text style={styles.cardTitle}>
               Please fill the below details to proceed...
             </Text>
           </View>
+          <View style={styles.horizontalRuler} />
           <View style={styles.cardContent}>
             <View style={styles.driverInfo}>
+            
               <Image
                 source={require("../assets/driver_avatar.png")}
                 style={styles.driverAvatar}
@@ -221,33 +245,61 @@ const MapScreen = ({ route }) => {
                 source={require("../assets/driver_car.png")}
                 style={styles.carImage}
               />
+            
             </View>
+            <View style={styles.horizontalRuler} />
             <View style={styles.detailsRow}>
               <Image
                 source={require("../assets/seat_icon.png")}
                 style={styles.detailsIcon}
               />
+              
               <Text style={styles.detailsLabel}>Seats Available</Text>
               <View style={styles.seatControlContainer}>
-                <TouchableOpacity onPress={decrementSeats} style={styles.seatButton}>
+                <TouchableOpacity
+                  onPress={decrementSeats}
+                  style={styles.seatButton}
+                >
                   <Text style={styles.seatButtonText}>-</Text>
                 </TouchableOpacity>
-                <Text style={styles.detailsValue}>{seatsAvailable} seat(s)</Text>
-                <TouchableOpacity onPress={incrementSeats} style={styles.seatButton}>
+                <Text style={styles.detailsValue}>
+                  {seatsAvailable} seat(s)
+                </Text>
+                <TouchableOpacity
+                  onPress={incrementSeats}
+                  style={styles.seatButton}
+                >
                   <Text style={styles.seatButtonText}>+</Text>
                 </TouchableOpacity>
               </View>
             </View>
+            <View style={styles.horizontalRuler} />
             <View style={styles.detailsRow}>
               <Image
                 source={require("../assets/money_icon.png")}
                 style={styles.detailsIcon}
               />
               <Text style={styles.detailsLabel}>Amount Per Seat</Text>
-              <Text style={styles.detailsValue}>₹100.00</Text>
+              <View style={styles.seatControlContainer}>
+                <TouchableOpacity
+                  onPress={decrementAmount}
+                  style={styles.seatButton}
+                >
+                  <Text style={styles.seatButtonText}>-</Text>
+                </TouchableOpacity>
+                <Text style={styles.detailsValue}>₹{amountPerSeat}.00</Text>
+                <TouchableOpacity
+                  onPress={incrementAmount}
+                  style={styles.seatButton}
+                >
+                  <Text style={styles.seatButtonText}>+</Text>
+
+                </TouchableOpacity>
+              </View>
             </View>
-            <View style={styles.detailsRow}>
-              <Text style={styles.detailsLabel}>
+            <View style={styles.horizontalRuler} />
+              <View style={styles.detailsRow}>
+              <Text style={styles.detailsLabel1}>
                 Do you commute to this destination regularly?
               </Text>
               <TouchableOpacity
@@ -269,14 +321,20 @@ const MapScreen = ({ route }) => {
       </View>
     </TouchableOpacity>
             </View>
-            <View style={styles.confirmButtonContainer}>
+              <View style={styles.confirmButtonContainer}>
               <Text style={styles.confirmButtonText}>Confirm Details</Text>
             </View>
+           
           </View>
+          <View style={styles.bottomNav}>
+        <BottomNav activeTab={activeTab} onTabPress={handleTabPress} />
+      </View> 
         </Animated.View>
       </PanGestureHandler>
     </View>
+    
   );
+  
 };
 
 const styles = StyleSheet.create({
@@ -289,28 +347,32 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
   },
   icon: {
-    width: 24,
-    height: 24,
+    width: 30,
+    height: 30,
+    resizeMode: 'cover',
+  },
+  icon1: {
+    width: 20,
+    height: 30,
+    resizeMode: 'cover',
   },
   topLeftIcon: {
     position: "absolute",
-    top: 48,
-    left: 20,
+    top: 60,
+    left: 10,
     width: 40,
     height: 40,
   },
   topRightIcon: {
     position: "absolute",
-    top: 48,
-    right: 20,
+    top: 60,
+    right: 10,
     width: 40,
     height: 40,
   },
-
- 
   card: {
     width: "100%",
-    height: "45%",
+    height: "62%",
     backgroundColor: "#fff",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
@@ -320,84 +382,109 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   cardHeader: {
-    marginBottom: 10,
-    textAlign: 'center',
+    alignItems: "center",
+  },
+  horizontalRuler1: {
+    width: 80,
+    height: 5,
+    borderRadius: 5,
+    backgroundColor: "#808080",
+    marginVertical: 5,
   },
   cardTitle: {
     fontSize: 16,
     fontFamily: "poppins",
-    textAlign: 'center',
+    marginVertical: 5,
+    color: '#5A5A5A',
   },
   cardContent: {
-    paddingVertical: 10,
+    marginTop: 10,
   },
   driverInfo: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 10,
+  },
+  horizontalLine: {
+    height: 1,
+    backgroundColor: "#ccc",
+    marginVertical: 10,
   },
   driverAvatar: {
     width: 60,
     height: 60,
     borderRadius: 15,
-    marginRight: 10,
+    marginRight: 15,
   },
   driverName: {
+    fontSize: 14,
+    color: '#5a5a5a',
     fontFamily: "poppins",
   },
   driverLocation: {
-    color: "#666",
+    color: "#a0a0a0",
+    fontFamily: "poppins",
+    fontSize: 11,
   },
   carImage: {
-    width: 50,
-    height: 50,
     marginLeft: "auto",
+    width: 120,
+    height: 60,
   },
   detailsRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 10,
+    marginVertical: 10,
   },
   detailsIcon: {
-    width: 24,
-    height: 24,
-    marginRight: 10,
+    width: 30,
+    height: 30,
+    marginRight: 15,
   },
   detailsLabel: {
+    fontSize: 14,
     fontFamily: "poppins",
     flex: 1,
-    fontSize: 16,
+    color: '#2D2D2D',
+    marginRight: 15,
   },
-  detailsValue: {
-    color: "#333",
+  detailsLabel1: {
+    fontSize: 12,
+    fontFamily: "poppins",
+    flex: 1,
+    marginLeft: 7,
+  },
+  detailsValue1: {
+    fontSize: 16,
   },
   seatControlContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop:1,
+    justifyContent: "center",
   },
   seatButton: {
     backgroundColor: "#000000",
-    borderRadius: 15,
-    width: 25,
-    height: 25,
+    padding: 5,
+    width: 22,
+    height: 22,
+    borderRadius: 45,
     justifyContent: "center",
-    alignItems: "center",
     marginHorizontal: 5,
   },
   seatButtonText: {
-    fontSize: 18,
-    fontFamily: "poppins",
-    color: "#FFFFFF",
+    fontSize: 10,
+    marginBottom:  1,
+    color: '#ffffff',
+    marginLeft: 3,
+    justifyContent: "center",
   },
   toggleContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginRight: 15,
+    marginRight: 3,
     borderRadius:30,
     backgroundColor: "#7C7C7C",
     color:"7C7C7C",
-    marginTop: 10,
+    marginTop: 7,
   },
   textContainer: {
     flexDirection: "row",
@@ -428,7 +515,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   confirmButtonContainer: {
-    marginTop: 20,
+    marginTop: 10,
     backgroundColor: "#000000",
     paddingVertical: 10,
     borderRadius: 5,
@@ -441,6 +528,20 @@ const styles = StyleSheet.create({
   errorText: {
     color: "red",
     marginTop: 10,
+  },
+  horizontalRuler: {
+    width: "100%", // Adjust this to control the width of the ruler
+    height: 1,
+    backgroundColor: "#d3d3d3", // Grey color
+    alignSelf: "center", // Center align the ruler
+    marginVertical: 10, // Optional: Adjust vertical spacing
+  },
+  bottomNav: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "white",
   },
 });
 

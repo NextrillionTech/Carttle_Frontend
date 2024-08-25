@@ -371,7 +371,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   locationIcon: {
-    top: 440,
+    top: "55%",
     right: 10,
     flex: 1,
   },
@@ -393,7 +393,8 @@ const styles = StyleSheet.create({
   },
   heading: {
     fontSize: 20,
-    marginBottom: 10,
+    marginBottom: 5,
+    marginTop: 20,
     textAlign: "center",
     fontFamily: "poppins",
   },
@@ -411,13 +412,13 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   horizontalRuler1: {
-    borderBottomWidth: 9,
+    borderBottomWidth: 3,
     borderBottomColor: "#808080",
-    width: "35%",
+    width: "32%",
     alignContent: "center",
     alignSelf: "center",
     left: 1,
-    top: 20,
+    top: 30,
   },
   selectionContainer: {
     flexDirection: "row",
@@ -444,8 +445,8 @@ const styles = StyleSheet.create({
     marginLeft: 5,
   },
   optionIcon: {
-    width: 20,
-    height: 20,
+    width: '14%',
+    height: '14%',
     marginRight: 10,
     padding: 10,
   },
@@ -522,10 +523,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "poppins",
   },
-  modalContainer: {
-    flex: 1,
-    padding: 20,
-  },
+ 
   currentLocationContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -571,29 +569,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "poppins",
   },
-  modalCloseButton: {
-    marginTop: 20,
-    padding: 10,
-    backgroundColor: "white",
-    borderRadius: 5,
-    alignSelf: "center",
-  },
-  modalCloseButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontFamily: "poppins",
-  },
+ 
   modalContainer: {
     flex: 1,
-    padding: 20,
-    marginTop: 15,
-    backgroundColor: "white",
+    padding: 25,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    height: '45%',
+    elevation: 1,
   },
   searchContainer: {
     padding: 10,
     marginVertical: 5,
     backgroundColor: "white",
     borderWidth: 2, // Increase the border width for a thicker line
+    borderRadius: 15,
     borderColor: "#ececec", // Change the color of the border if needed
     borderRadius: 10, // Optional: to give rounded corners
     elevation: 5,

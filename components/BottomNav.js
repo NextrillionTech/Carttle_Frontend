@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
     height: 40,
   },
   activeIcon: {
-    tintColor: 'blue',
+    tintColor: '#188AEC',
   },
 });
 

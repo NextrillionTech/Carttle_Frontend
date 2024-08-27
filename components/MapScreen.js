@@ -3,8 +3,10 @@ import {
   View,
   StyleSheet,
   ActivityIndicator,
+  TouchableWithoutFeedback,
   Text,
   Image,
+  Modal,
   Dimensions,
   TouchableOpacity,
 } from "react-native";
@@ -17,7 +19,11 @@ import {
   PanGestureHandler,
   State,
 } from "react-native-gesture-handler";
-import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from "react-native-reanimated";
 import * as Font from "expo-font";
 
 const fetchFonts = () => {
@@ -34,6 +40,8 @@ const MapScreen = ({ route }) => {
   const [routeCoords, setRouteCoords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isMenuVisible, setMenuVisible] = useState(false);
+
   const { destination } = route.params;
   const [activeTab, setActiveTab] = useState("home");
   const translateY = useSharedValue(0);
@@ -71,6 +79,13 @@ const MapScreen = ({ route }) => {
       }
     })();
   }, [destination]);
+  const toggleMenu = () => {
+    setMenuVisible(!isMenuVisible);
+  };
+
+  const closeMenu = () => {
+    setMenuVisible(false);
+  };
 
   const fetchRoute = async (origin, destination) => {
     const MAPBOX_TOKEN =
@@ -125,7 +140,6 @@ const MapScreen = ({ route }) => {
     }
   };
 
- 
   const toggleStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: withSpring(toggleValue.value * 25) }],
   }));
@@ -134,7 +148,6 @@ const MapScreen = ({ route }) => {
     setCommuteRegularly((prevState) => !prevState);
     toggleValue.value = commuteRegularly ? 0 : 1;
   };
-
 
   const incrementSeats = () => {
     setSeatsAvailable((prev) => prev + 1);
@@ -202,10 +215,55 @@ const MapScreen = ({ route }) => {
         <Text style={styles.errorText}>{error || "No data available"}</Text>
       )}
 
-      <Image
-        source={require("../assets/nav_icon.png")}
-        style={styles.topLeftIcon}
-      />
+      <TouchableOpacity onPress={toggleMenu}>
+        <Image
+          source={require("../assets/nav_icon.png")}
+          style={[styles.icon, styles.menuIcon]}
+        />
+      </TouchableOpacity>
+      <Modal
+        visible={isMenuVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={closeMenu}
+      >
+        <TouchableWithoutFeedback onPress={closeMenu}>
+          <View>
+            <TouchableWithoutFeedback>
+              <View style={styles.sideMenu}>
+                <Image
+                  source={require("../assets/profilePic.jpg")}
+                  style={styles.profileImage}
+                />
+                <Text style={styles.userName}>Naina Kapoor</Text>
+                <Text style={styles.userEmail}>naina****@gmail.com</Text>
+                <View style={styles.menuOptions}>
+                  <TouchableOpacity>
+                    <Text style={styles.menuOptionText}>Profile</Text>
+                    <View style={styles.horizontalRuler2} />
+                  </TouchableOpacity>
+                  <TouchableOpacity>
+                    <Text style={styles.menuOptionText}>Trip History</Text>
+                    <View style={styles.horizontalRuler2} />
+                  </TouchableOpacity>
+                  <TouchableOpacity>
+                    <Text style={styles.menuOptionText}>About</Text>
+                    <View style={styles.horizontalRuler2} />
+                  </TouchableOpacity>
+                  <TouchableOpacity>
+                    <Text style={styles.menuOptionText}>Help</Text>
+                    <View style={styles.horizontalRuler2} />
+                  </TouchableOpacity>
+                  <TouchableOpacity>
+                    <Text style={styles.menuOptionText}>Sign Out</Text>
+                    <View style={styles.horizontalRuler2} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
       <Image
         source={require("../assets/Bell_icon.png")}
         style={styles.topRightIcon}
@@ -227,7 +285,6 @@ const MapScreen = ({ route }) => {
           <View style={styles.horizontalRuler} />
           <View style={styles.cardContent}>
             <View style={styles.driverInfo}>
-            
               <Image
                 source={require("../assets/driver_avatar.png")}
                 style={styles.driverAvatar}
@@ -245,7 +302,6 @@ const MapScreen = ({ route }) => {
                 source={require("../assets/driver_car.png")}
                 style={styles.carImage}
               />
-            
             </View>
             <View style={styles.horizontalRuler} />
             <View style={styles.detailsRow}>
@@ -253,7 +309,7 @@ const MapScreen = ({ route }) => {
                 source={require("../assets/seat_icon.png")}
                 style={styles.detailsIcon}
               />
-              
+
               <Text style={styles.detailsLabel}>Seats Available</Text>
               <View style={styles.seatControlContainer}>
                 <TouchableOpacity
@@ -293,48 +349,42 @@ const MapScreen = ({ route }) => {
                   style={styles.seatButton}
                 >
                   <Text style={styles.seatButtonText}>+</Text>
-
                 </TouchableOpacity>
               </View>
             </View>
             <View style={styles.horizontalRuler} />
-              <View style={styles.detailsRow}>
+            <View style={styles.detailsRow}>
               <Text style={styles.detailsLabel1}>
                 Do you commute to this destination regularly?
               </Text>
               <TouchableOpacity
-      style={styles.toggleContainer}
-      onPress={handleToggle}
-    >
-      <View style={styles.ovalShape}>
-        <Animated.View
-          style={[styles.toggleCircle, toggleStyle]}
-        />
-        <View style={styles.textContainer}>
-        <Text style={styles.toggleText}>
-        {commuteRegularly ? "Yes" : ""}
-      </Text>
-      <Text style={styles.toggleText}>
-        {commuteRegularly ? "" : "No"}
-      </Text>
-        </View>
-      </View>
-    </TouchableOpacity>
+                style={styles.toggleContainer}
+                onPress={handleToggle}
+              >
+                <View style={styles.ovalShape}>
+                  <Animated.View style={[styles.toggleCircle, toggleStyle]} />
+                  <View style={styles.textContainer}>
+                    <Text style={styles.toggleText}>
+                      {commuteRegularly ? "Yes" : ""}
+                    </Text>
+                    <Text style={styles.toggleText}>
+                      {commuteRegularly ? "" : "No"}
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
             </View>
-              <View style={styles.confirmButtonContainer}>
+            <View style={styles.confirmButtonContainer}>
               <Text style={styles.confirmButtonText}>Confirm Details</Text>
             </View>
-           
           </View>
           <View style={styles.bottomNav}>
-        <BottomNav activeTab={activeTab} onTabPress={handleTabPress} />
-      </View> 
+            <BottomNav activeTab={activeTab} onTabPress={handleTabPress} />
+          </View>
         </Animated.View>
       </PanGestureHandler>
     </View>
-    
   );
-  
 };
 
 const styles = StyleSheet.create({
@@ -349,12 +399,12 @@ const styles = StyleSheet.create({
   icon: {
     width: 30,
     height: 30,
-    resizeMode: 'cover',
+    resizeMode: "cover",
   },
   icon1: {
     width: 20,
     height: 30,
-    resizeMode: 'cover',
+    resizeMode: "cover",
   },
   topLeftIcon: {
     position: "absolute",
@@ -362,6 +412,17 @@ const styles = StyleSheet.create({
     left: 10,
     width: 40,
     height: 40,
+  },
+  icon: {
+    position: "relative",
+    width: 40,
+    height: 40,
+  },
+  menuIcon: {
+    position: "relative",
+    bottom: "815%",
+    margintop: 1,
+    right: 160,
   },
   topRightIcon: {
     position: "absolute",
@@ -395,7 +456,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "poppins",
     marginVertical: 5,
-    color: '#5A5A5A',
+    color: "#5A5A5A",
   },
   cardContent: {
     marginTop: 10,
@@ -417,7 +478,7 @@ const styles = StyleSheet.create({
   },
   driverName: {
     fontSize: 14,
-    color: '#5a5a5a',
+    color: "#5a5a5a",
     fontFamily: "poppins",
   },
   driverLocation: {
@@ -444,7 +505,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "poppins",
     flex: 1,
-    color: '#2D2D2D',
+    color: "#2D2D2D",
     marginRight: 15,
   },
   detailsLabel1: {
@@ -472,8 +533,8 @@ const styles = StyleSheet.create({
   },
   seatButtonText: {
     fontSize: 10,
-    marginBottom:  1,
-    color: '#ffffff',
+    marginBottom: 1,
+    color: "#ffffff",
     marginLeft: 3,
     justifyContent: "center",
   },
@@ -481,22 +542,22 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginRight: 3,
-    borderRadius:30,
+    borderRadius: 30,
     backgroundColor: "#7C7C7C",
-    color:"7C7C7C",
+    color: "7C7C7C",
     marginTop: 7,
   },
   textContainer: {
     flexDirection: "row",
   },
   ovalShape: {
-    backgroundColor: '#7C7C7C',
+    backgroundColor: "#7C7C7C",
     borderRadius: 25,
     height: 30,
     width: 60,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: 5,
   },
   toggleCircle: {
@@ -542,6 +603,49 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: "white",
+  },
+  horizontalRuler2: {
+    width: "150%", // Adjust this to control the width of the ruler
+    height: 1,
+    backgroundColor: "#d3d3d3", // Grey color
+    alignSelf: "center", // Center align the ruler
+    marginVertical: 10, // Optional: Adjust vertical spacing
+  },
+
+  sideMenu: {
+    backgroundColor: "white",
+    width: "60%",
+    height: "100%",
+    borderTopRightRadius: 50, // Top right corner radius
+    borderBottomRightRadius: 50, // Bottom right corner radius
+    left: 0,
+    alignItems: "center", // Center align the contents horizontally
+  },
+  profileImage: {
+    width: 80,
+    height: 80,
+    top: 25,
+    borderRadius: 40,
+    marginBottom: 30,
+  },
+  userName: {
+    fontSize: 20,
+    fontFamily: "poppins",
+  },
+  userEmail: {
+    fontSize: 10,
+    color: "gray",
+    fontFamily: "poppins",
+
+    marginBottom: 30,
+  },
+
+  menuOptionText: {
+    fontSize: 18,
+    alignContent: "center",
+    alignItems: "center",
+    fontFamily: "poppins",
+    paddingVertical: 10,
   },
 });
 

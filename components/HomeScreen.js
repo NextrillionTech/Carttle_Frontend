@@ -40,6 +40,7 @@ const HomeScreen = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [fontLoaded, setFontLoaded] = useState(false);
+  const [isMenuVisible, setMenuVisible] = useState(false);
   const [placeName, setPlaceName] = useState("Fetching current location...");
   const [dropdownPosition, setDropdownPosition] = useState(null);
   useEffect(() => {
@@ -49,7 +50,13 @@ const HomeScreen = ({ navigation }) => {
     };
     loadFonts();
   }, []);
+  const toggleMenu = () => {
+    setMenuVisible(!isMenuVisible);
+  };
 
+  const closeMenu = () => {
+    setMenuVisible(false);
+  };
   useEffect(() => {
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
@@ -185,10 +192,55 @@ const HomeScreen = ({ navigation }) => {
         )}
       </MapView>
 
-      <Image
-        source={require("../assets/nav_icon.png")}
-        style={[styles.icon, styles.menuIcon]}
-      />
+      <TouchableOpacity onPress={toggleMenu}>
+        <Image
+          source={require("../assets/nav_icon.png")}
+          style={[styles.icon, styles.menuIcon]}
+        />
+      </TouchableOpacity>
+      <Modal
+        visible={isMenuVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={closeMenu}
+      >
+        <TouchableWithoutFeedback onPress={closeMenu}>
+          <View>
+            <TouchableWithoutFeedback>
+              <View style={styles.sideMenu}>
+                <Image
+                  source={require("../assets/profilePic.jpg")}
+                  style={styles.profileImage}
+                />
+                <Text style={styles.userName}>Naina Kapoor</Text>
+                <Text style={styles.userEmail}>naina****@gmail.com</Text>
+                <View style={styles.menuOptions}>
+                  <TouchableOpacity>
+                    <Text style={styles.menuOptionText}>Profile</Text>
+                    <View style={styles.horizontalRuler2} />
+                  </TouchableOpacity>
+                  <TouchableOpacity>
+                    <Text style={styles.menuOptionText}>Trip History</Text>
+                    <View style={styles.horizontalRuler2} />
+                  </TouchableOpacity>
+                  <TouchableOpacity>
+                    <Text style={styles.menuOptionText}>About</Text>
+                    <View style={styles.horizontalRuler2} />
+                  </TouchableOpacity>
+                  <TouchableOpacity>
+                    <Text style={styles.menuOptionText}>Help</Text>
+                    <View style={styles.horizontalRuler2} />
+                  </TouchableOpacity>
+                  <TouchableOpacity>
+                    <Text style={styles.menuOptionText}>Sign Out</Text>
+                    <View style={styles.horizontalRuler2} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
       <Image
         source={require("../assets/Bell_icon.png")}
         style={[styles.icon, styles.notificationIcon]}
@@ -354,24 +406,29 @@ const styles = StyleSheet.create({
   markerIcon: {
     width: 80,
     height: 80,
+    position: "relative",
   },
   icon: {
-    position: "absolute",
+    position: "relative",
     width: 40,
     height: 40,
   },
   menuIcon: {
-    top: 40,
-    left: 10,
-    marginTop: 12,
+    position: "relative",
+    bottom: "815%",
+    margintop: 1,
+    right: 160,
   },
   notificationIcon: {
     top: 40,
     right: 10,
     marginTop: 12,
+    position: "absolute",
   },
   locationIcon: {
     top: "55%",
+    position: "absolute",
+
     right: 10,
     flex: 1,
   },
@@ -420,6 +477,7 @@ const styles = StyleSheet.create({
     left: 1,
     top: 30,
   },
+
   selectionContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -445,8 +503,8 @@ const styles = StyleSheet.create({
     marginLeft: 5,
   },
   optionIcon: {
-    width: '14%',
-    height: '14%',
+    width: "14%",
+    height: "14%",
     marginRight: 10,
     padding: 10,
   },
@@ -523,7 +581,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "poppins",
   },
- 
+
   currentLocationContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -569,13 +627,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "poppins",
   },
- 
+
   modalContainer: {
     flex: 1,
     padding: 25,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    height: '45%',
+    height: "45%",
     elevation: 1,
   },
   searchContainer: {
@@ -696,6 +754,49 @@ const styles = StyleSheet.create({
     backgroundColor: "#d3d3d3", // Grey color
     alignSelf: "center", // Center align the ruler
     marginVertical: 10, // Optional: Adjust vertical spacing
+  },
+  horizontalRuler2: {
+    width: "150%", // Adjust this to control the width of the ruler
+    height: 1,
+    backgroundColor: "#d3d3d3", // Grey color
+    alignSelf: "center", // Center align the ruler
+    marginVertical: 10, // Optional: Adjust vertical spacing
+  },
+
+  sideMenu: {
+    backgroundColor: "white",
+    width: "60%",
+    height: "100%",
+    borderTopRightRadius: 50, // Top right corner radius
+    borderBottomRightRadius: 50, // Bottom right corner radius
+    left: 0,
+    alignItems: "center", // Center align the contents horizontally
+  },
+  profileImage: {
+    width: 80,
+    height: 80,
+    top: 25,
+    borderRadius: 40,
+    marginBottom: 30,
+  },
+  userName: {
+    fontSize: 20,
+    fontFamily: "poppins",
+  },
+  userEmail: {
+    fontSize: 10,
+    color: "gray",
+    fontFamily: "poppins",
+
+    marginBottom: 30,
+  },
+
+  menuOptionText: {
+    fontSize: 18,
+    alignContent: "center",
+    alignItems: "center",
+    fontFamily: "poppins",
+    paddingVertical: 10,
   },
 });
 

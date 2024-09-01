@@ -72,6 +72,11 @@ function App() {
           component={MapScreen}
           options={{ headerShown: false }}
         />
+        <Stack.Screen
+          name="MessageScreen"
+          component={MessageScreen}
+          options={{ headerShown: false }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

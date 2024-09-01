@@ -1,25 +1,25 @@
-import React from 'react';
-import { StyleSheet, View, Image, TouchableOpacity } from 'react-native';
+import React from "react";
+import { StyleSheet, View, Image, TouchableOpacity } from "react-native";
 
 const BottomNav = ({ activeTab, onTabPress }) => {
   return (
     <View style={styles.navBar}>
-      <TouchableOpacity onPress={() => onTabPress('home')}>
+      <TouchableOpacity onPress={() => onTabPress("home")}>
         <Image
-          source={require('../assets/HOME.png')}
-          style={[styles.icon, activeTab === 'home' && styles.activeIcon]}
+          source={require("../assets/HOME.png")}
+          style={[styles.icon, activeTab === "home" && styles.activeIcon]}
         />
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => onTabPress('rides')}>
+      <TouchableOpacity onPress={() => onTabPress("rides")}>
         <Image
-          source={require('../assets/RIDES.png')} 
-          style={[styles.icon, activeTab === 'rides' && styles.activeIcon]}
+          source={require("../assets/RIDES.png")}
+          style={[styles.icon, activeTab === "rides" && styles.activeIcon]}
         />
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => onTabPress('message')}>
+      <TouchableOpacity onPress={() => onTabPress("message")}>
         <Image
-          source={require('../assets/MESG.png')} 
-          style={[styles.icon, activeTab === 'message' && styles.activeIcon]}
+          source={require("../assets/MESG.png")}
+          style={[styles.icon, activeTab === "message" && styles.activeIcon]}
         />
       </TouchableOpacity>
     </View>
@@ -28,14 +28,14 @@ const BottomNav = ({ activeTab, onTabPress }) => {
 
 const styles = StyleSheet.create({
   navBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    backgroundColor: 'white',
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+    backgroundColor: "white",
     marginTop: 20,
     height: 60,
     borderTopWidth: 1,
-    borderTopColor: '#ddd',
+    borderTopColor: "#ddd",
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
   },
@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
     height: 40,
   },
   activeIcon: {
-    tintColor: '#188AEC',
+    tintColor: "#188AEC",
   },
 });
 

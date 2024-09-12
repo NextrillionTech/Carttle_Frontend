@@ -13,6 +13,7 @@ import {
 import MapView, { Marker, Polyline } from "react-native-maps";
 import * as Location from "expo-location";
 import axios from "axios";
+import { Picker } from '@react-native-picker/picker';
 import BottomNav from "./BottomNav";
 import {
   GestureDetector,
@@ -27,7 +28,6 @@ import Animated, {
 import * as Font from "expo-font";
 
 const fetchFonts = () => {
-  x;
   return Font.loadAsync({
     poppins: require("../assets/Poppins-Medium.ttf"),
   });
@@ -41,14 +41,17 @@ const MapScreen = ({ route }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isMenuVisible, setMenuVisible] = useState(false);
-
+  const [isYesPopupVisible, setYesPopupVisible] = useState(false);
+  const [selectedDateRange, setSelectedDateRange] = useState('');
+  const [dateOptions, setDateOptions] = useState([]);
+  
   const { destination } = route.params;
   const [activeTab, setActiveTab] = useState("home");
   const translateY = useSharedValue(0);
   const [commuteRegularly, setCommuteRegularly] = useState(false);
   const toggleValue = useSharedValue(commuteRegularly ? 1 : 0);
   const [seatsAvailable, setSeatsAvailable] = useState(1);
-  const [amountPerSeat, setAmountPerSeat] = useState(100); // Initial amount per seat
+  const [amountPerSeat, setAmountPerSeat] = useState(100);
 
   useEffect(() => {
     (async () => {
@@ -79,6 +82,34 @@ const MapScreen = ({ route }) => {
       }
     })();
   }, [destination]);
+
+  useEffect(() => {
+    if (commuteRegularly) {
+      const today = new Date();
+      const options = [];
+
+      for (let i = 0; i < 7; i++) {
+        const startDate = new Date();
+        startDate.setDate(today.getDate() + i);
+        const endDate = new Date();
+        endDate.setDate(startDate.getDate() + 7);
+
+        const formattedStart = formatDate(startDate);
+        const formattedEnd = formatDate(endDate);
+
+        options.push(`${formattedStart} - ${formattedEnd}`);
+      }
+      setDateOptions(options);
+    }
+  }, [commuteRegularly]);
+
+  const formatDate = (date) => {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
   const toggleMenu = () => {
     setMenuVisible(!isMenuVisible);
   };
@@ -88,8 +119,7 @@ const MapScreen = ({ route }) => {
   };
 
   const fetchRoute = async (origin, destination) => {
-    const MAPBOX_TOKEN =
-      "sk.eyJ1IjoibmV4dHJpbGxpb24tdGVjaCIsImEiOiJjbHpnaHdiaTkxb29xMmpxc3V5bTRxNWNkIn0.l4AsMHEMhAEO90klTb3oCQ"; // Replace with your token
+    const MAPBOX_TOKEN = "sk.eyJ1IjoibmV4dHJpbGxpb24tdGVjaCIsImEiOiJjbHpnaHdiaTkxb29xMmpxc3V5bTRxNWNkIn0.l4AsMHEMhAEO90klTb3oCQ"; // Replace with your token
     const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}?geometries=geojson&access_token=${MAPBOX_TOKEN}`;
 
     try {
@@ -111,6 +141,7 @@ const MapScreen = ({ route }) => {
       setLoading(false);
     }
   };
+
   const handleTabPress = (tab) => {
     setActiveTab(tab);
     if (tab === "home") {
@@ -127,7 +158,6 @@ const MapScreen = ({ route }) => {
 
     switch (nativeEvent.state) {
       case State.BEGAN:
-        // Handle gesture began
         break;
       case State.ACTIVE:
         translateY.value = nativeEvent.translationY;
@@ -145,8 +175,12 @@ const MapScreen = ({ route }) => {
   }));
 
   const handleToggle = () => {
-    setCommuteRegularly((prevState) => !prevState);
-    toggleValue.value = commuteRegularly ? 0 : 1;
+    const newValue = !commuteRegularly;
+    setCommuteRegularly(newValue);
+    toggleValue.value = withSpring(newValue ? 1 : 0);
+    if (newValue) {
+      setYesPopupVisible(true);
+    }
   };
 
   const incrementSeats = () => {
@@ -383,6 +417,49 @@ const MapScreen = ({ route }) => {
           </View>
         </Animated.View>
       </PanGestureHandler>
+
+      {/* Yes Popup */}
+      <Modal
+        visible={isYesPopupVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setYesPopupVisible(false)}
+      >
+        <View style={styles.popupContainer}>
+          <View style={styles.popup}>
+            <Text style={styles.popupMessage}>
+              Make your ride a <Text style={styles.popupTitle}>shuttle </Text>
+              and confirm your <Text style={styles.popupTitle}>earnings </Text>
+              daily, without the hustle to create a new ride tomorrow,
+              day-after-tom, & so on...
+            </Text>
+            <View style={styles.dropdownContainer}>
+              <Text style={styles.selectLabel}>Select Week</Text>
+              <View style={styles.dropdownWrapper}>
+                <Image
+                  source={require("../assets/clock.png")} // Add your icon path here
+                  style={styles.dropdownIcon}
+                />
+                <Picker
+                  selectedValue={selectedDateRange}
+                  style={styles.picker}
+                  onValueChange={(itemValue) => setSelectedDateRange(itemValue)}
+                >
+                  {dateOptions.map((option, index) => (
+                    <Picker.Item key={index} label={option} value={option} />
+                  ))}
+                </Picker>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setYesPopupVisible(false)}
+            >
+              <Text style={styles.closeButtonText}>Yes! Make It A Shuttle</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -392,6 +469,70 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  popupContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+  },
+  popup: {
+    width: "90%",
+    padding: 20,
+    backgroundColor: "white",
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  popupTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  popupMessage: {
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 20,
+    fontFamily: "poppins",
+  },
+  selectLabel: {
+    fontSize: 16,
+    marginBottom: 10,
+    color: '#7C7C7C',
+    alignSelf: 'flex-start', // Left align the text
+  },
+  dropdownContainer: {
+    width: '100%',
+    alignItems: 'flex-start', // Align items to the start
+  },
+  dropdownWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+  },
+  dropdownIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 10,
+    marginBottom: 22,
+  },
+  picker: {
+    height: 50,
+    width: '100%',
+    marginBottom: 20,
+    backgroundColor: '#F5F5F5',
+    flex: 1,
+  },
+  closeButton: {
+    backgroundColor: "black",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    width: "80%",
+    alignItems: "center",
+    borderRadius: 5,
+  },
+  closeButtonText: {
+    color: "white",
+    fontFamily: "poppins",
+    fontSize: 16,
   },
   map: {
     ...StyleSheet.absoluteFillObject,
@@ -410,11 +551,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 60,
     left: 10,
-    width: 40,
-    height: 40,
-  },
-  icon: {
-    position: "relative",
     width: 40,
     height: 40,
   },
@@ -591,11 +727,11 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   horizontalRuler: {
-    width: "100%", // Adjust this to control the width of the ruler
+    width: "100%",
     height: 1,
-    backgroundColor: "#d3d3d3", // Grey color
-    alignSelf: "center", // Center align the ruler
-    marginVertical: 10, // Optional: Adjust vertical spacing
+    backgroundColor: "#d3d3d3",
+    alignSelf: "center",
+    marginVertical: 10,
   },
   bottomNav: {
     position: "absolute",
@@ -605,21 +741,21 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
   },
   horizontalRuler2: {
-    width: "150%", // Adjust this to control the width of the ruler
+    width: "150%",
     height: 1,
-    backgroundColor: "#d3d3d3", // Grey color
-    alignSelf: "center", // Center align the ruler
-    marginVertical: 10, // Optional: Adjust vertical spacing
+    backgroundColor: "#d3d3d3",
+    alignSelf: "center",
+    marginVertical: 10,
   },
 
   sideMenu: {
     backgroundColor: "white",
     width: "60%",
     height: "100%",
-    borderTopRightRadius: 50, // Top right corner radius
-    borderBottomRightRadius: 50, // Bottom right corner radius
+    borderTopRightRadius: 50,
+    borderBottomRightRadius: 50,
     left: 0,
-    alignItems: "center", // Center align the contents horizontally
+    alignItems: "center",
   },
   profileImage: {
     width: 80,
@@ -636,7 +772,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: "gray",
     fontFamily: "poppins",
-
     marginBottom: 30,
   },
 

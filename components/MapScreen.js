@@ -13,7 +13,7 @@ import {
 import MapView, { Marker, Polyline } from "react-native-maps";
 import * as Location from "expo-location";
 import axios from "axios";
-import { Picker } from '@react-native-picker/picker';
+import { Picker } from "@react-native-picker/picker";
 import BottomNav from "./BottomNav";
 import {
   GestureDetector,
@@ -42,9 +42,12 @@ const MapScreen = ({ route }) => {
   const [error, setError] = useState(null);
   const [isMenuVisible, setMenuVisible] = useState(false);
   const [isYesPopupVisible, setYesPopupVisible] = useState(false);
-  const [selectedDateRange, setSelectedDateRange] = useState('');
+  const [selectedDateRange, setSelectedDateRange] = useState("");
+  const [selectedTime, setSelectedTime] = useState("");
   const [dateOptions, setDateOptions] = useState([]);
-  
+  const [timeOptions, setTimeOptions] = useState([]);
+  const [commuteBackRegularly, setCommuteBackRegularly] = useState(false);
+
   const { destination } = route.params;
   const [activeTab, setActiveTab] = useState("home");
   const translateY = useSharedValue(0);
@@ -103,9 +106,30 @@ const MapScreen = ({ route }) => {
     }
   }, [commuteRegularly]);
 
+  useEffect(() => {
+    const generateTimeOptions = () => {
+      const options = [];
+      const currentTime = new Date();
+
+      for (let i = 0; i < 48; i++) {
+        // 48 half-hour increments in a day
+        const time = new Date(currentTime.getTime() + i * 30 * 60000); // 30 mins in ms
+        const formattedTime = time.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        });
+        options.push(formattedTime);
+      }
+      setTimeOptions(options);
+    };
+
+    generateTimeOptions();
+  }, []);
+
   const formatDate = (date) => {
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
     const year = date.getFullYear();
     return `${day}/${month}/${year}`;
   };
@@ -119,7 +143,8 @@ const MapScreen = ({ route }) => {
   };
 
   const fetchRoute = async (origin, destination) => {
-    const MAPBOX_TOKEN = "sk.eyJ1IjoibmV4dHJpbGxpb24tdGVjaCIsImEiOiJjbHpnaHdiaTkxb29xMmpxc3V5bTRxNWNkIn0.l4AsMHEMhAEO90klTb3oCQ"; // Replace with your token
+    const MAPBOX_TOKEN =
+      "sk.eyJ1IjoibmV4dHJpbGxpb24tdGVjaCIsImEiOiJjbHpnaHdiaTkxb29xMmpxc3V5bTRxNWNkIn0.l4AsMHEMhAEO90klTb3oCQ"; // Replace with your token
     const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}?geometries=geojson&access_token=${MAPBOX_TOKEN}`;
 
     try {
@@ -408,12 +433,17 @@ const MapScreen = ({ route }) => {
                 </View>
               </TouchableOpacity>
             </View>
+
             <View style={styles.confirmButtonContainer}>
-              <Text style={styles.confirmButtonText}>Confirm Details</Text>
+              <TouchableOpacity onPress={() => setYesPopupVisible(true)}>
+                <Text style={styles.confirmButtonText}>Confirm Details</Text>
+              </TouchableOpacity>
             </View>
-          </View>
-          <View style={styles.bottomNav}>
-            <BottomNav activeTab={activeTab} onTabPress={handleTabPress} />
+            <BottomNav
+              activeTab={activeTab}
+              onTabPress={handleTabPress}
+              style={styles.bottomNav}
+            />
           </View>
         </Animated.View>
       </PanGestureHandler>
@@ -436,10 +466,6 @@ const MapScreen = ({ route }) => {
             <View style={styles.dropdownContainer}>
               <Text style={styles.selectLabel}>Select Week</Text>
               <View style={styles.dropdownWrapper}>
-                <Image
-                  source={require("../assets/clock.png")} // Add your icon path here
-                  style={styles.dropdownIcon}
-                />
                 <Picker
                   selectedValue={selectedDateRange}
                   style={styles.picker}
@@ -451,6 +477,44 @@ const MapScreen = ({ route }) => {
                 </Picker>
               </View>
             </View>
+
+            <View style={styles.dropdownContainer}>
+              <Text style={styles.selectLabel}>Select Time</Text>
+              <View style={styles.dropdownWrapper}>
+                <Picker
+                  selectedValue={selectedTime}
+                  style={styles.picker}
+                  onValueChange={(itemValue) => setSelectedTime(itemValue)}
+                >
+                  {timeOptions.map((option, index) => (
+                    <Picker.Item key={index} label={option} value={option} />
+                  ))}
+                </Picker>
+              </View>
+            </View>
+            <View style={styles.detailsRow}>
+              <Text style={styles.detailsLabel1}>
+                Do you make the commute back from the same destination
+                regularly?
+              </Text>
+              <TouchableOpacity
+                style={styles.toggleContainer}
+                onPress={() => setCommuteBackRegularly((prev) => !prev)}
+              >
+                <View style={styles.ovalShape}>
+                  <Animated.View style={[styles.toggleCircle, toggleStyle]} />
+                  <View style={styles.textContainer}>
+                    <Text style={styles.toggleText}>
+                      {commuteBackRegularly ? "Yes" : ""}
+                    </Text>
+                    <Text style={styles.toggleText}>
+                      {commuteBackRegularly ? "" : "No"}
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            </View>
+
             <TouchableOpacity
               style={styles.closeButton}
               onPress={() => setYesPopupVisible(false)}
@@ -496,30 +560,21 @@ const styles = StyleSheet.create({
   selectLabel: {
     fontSize: 16,
     marginBottom: 10,
-    color: '#7C7C7C',
-    alignSelf: 'flex-start', // Left align the text
+    color: "#7C7C7C",
+    alignSelf: "flex-start", // Left align the text
   },
   dropdownContainer: {
-    width: '100%',
-    alignItems: 'flex-start', // Align items to the start
+    width: "100%",
+    alignItems: "flex-start", // Align items to the start
+    marginBottom: 20,
   },
   dropdownWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-  },
-  dropdownIcon: {
-    width: 20,
-    height: 20,
-    marginRight: 10,
-    marginBottom: 22,
+    width: "100%",
   },
   picker: {
     height: 50,
-    width: '100%',
-    marginBottom: 20,
-    backgroundColor: '#F5F5F5',
-    flex: 1,
+    width: "100%",
+    backgroundColor: "#F5F5F5",
   },
   closeButton: {
     backgroundColor: "black",
@@ -657,6 +712,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+  },
+  bottomNav: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "white",
   },
   seatButton: {
     backgroundColor: "#000000",

@@ -1,25 +1,34 @@
 import React from "react";
 import { StyleSheet, View, Image, TouchableOpacity } from "react-native";
 
-const BottomNav = ({ activeTab, onTabPress }) => {
+const BottomNav = ({ activeTab, onTabPress, disableActiveColor }) => {
   return (
     <View style={styles.navBar}>
       <TouchableOpacity onPress={() => onTabPress("home")}>
         <Image
           source={require("../assets/HOME.png")}
-          style={[styles.icon, activeTab === "home" && styles.activeIcon]}
+          style={[
+            styles.icon,
+            !disableActiveColor && activeTab === "home" && styles.activeIcon,
+          ]}
         />
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => onTabPress("rides")}>
+      <TouchableOpacity onPress={() => onTabPress("Rides")}>
         <Image
           source={require("../assets/RIDES.png")}
-          style={[styles.icon, activeTab === "rides" && styles.activeIcon]}
+          style={[
+            styles.icon,
+            !disableActiveColor && activeTab === "rides" && styles.activeIcon,
+          ]}
         />
       </TouchableOpacity>
       <TouchableOpacity onPress={() => onTabPress("message")}>
         <Image
           source={require("../assets/MESG.png")}
-          style={[styles.icon, activeTab === "message" && styles.activeIcon]}
+          style={[
+            styles.icon,
+            !disableActiveColor && activeTab === "message" && styles.activeIcon,
+          ]}
         />
       </TouchableOpacity>
     </View>

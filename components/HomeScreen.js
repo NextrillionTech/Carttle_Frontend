@@ -43,6 +43,12 @@ const HomeScreen = ({ navigation }) => {
   const [isMenuVisible, setMenuVisible] = useState(false);
   const [placeName, setPlaceName] = useState("Fetching current location...");
   const [dropdownPosition, setDropdownPosition] = useState(null);
+
+  const openNotifications = () => {
+    // Navigate to the Notifications screen
+    navigation.navigate("NotificationScreen");
+  };
+
   useEffect(() => {
     const loadFonts = async () => {
       await fetchFonts();
@@ -241,10 +247,17 @@ const HomeScreen = ({ navigation }) => {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-      <Image
-        source={require("../assets/Bell_icon.png")}
-        style={[styles.icon, styles.notificationIcon]}
-      />
+      <View style={styles.headerContainer}>
+        <TouchableOpacity
+          onPress={openNotifications}
+          style={{ width: 40, height: 40 }}
+        >
+          <Image
+            source={require("../assets/Bell_icon.png")}
+            style={[styles.icon, styles.notificationIcon]}
+          />
+        </TouchableOpacity>
+      </View>
       <Image
         source={require("../assets/locateMe_icon.png")}
         style={[styles.icon, styles.locationIcon]}
@@ -381,6 +394,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  headerContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+  },
   map: {
     ...StyleSheet.absoluteFillObject,
   },
@@ -415,15 +434,15 @@ const styles = StyleSheet.create({
   },
   menuIcon: {
     position: "relative",
-    bottom: "815%",
-    margintop: 1,
+    bottom: "750%",
+    margintop: 78,
     right: 160,
   },
   notificationIcon: {
-    top: 40,
-    right: 10,
-    marginTop: 12,
-    position: "absolute",
+    position: "relative",
+    bottom: "890%",
+    margintop: 2,
+    left: 160,
   },
   locationIcon: {
     top: "55%",

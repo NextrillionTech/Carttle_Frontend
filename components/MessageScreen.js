@@ -12,8 +12,8 @@ import BottomNav from "./BottomNav";
 import { sendMessage } from "./TwilioService";
 import { useNavigation } from "@react-navigation/native";
 import EmojiSelector, { Categories } from "react-native-emoji-selector";
-import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
+import { NavigationContainer } from "@react-navigation/native";
+import { createStackNavigator } from "@react-navigation/stack";
 
 const MessageScreen = () => {
   const [message, setMessage] = useState("");

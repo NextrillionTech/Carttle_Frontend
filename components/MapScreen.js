@@ -112,8 +112,7 @@ const MapScreen = ({ route }) => {
       const currentTime = new Date();
 
       for (let i = 0; i < 48; i++) {
-        // 48 half-hour increments in a day
-        const time = new Date(currentTime.getTime() + i * 30 * 60000); // 30 mins in ms
+        const time = new Date(currentTime.getTime() + i * 30 * 60000);
         const formattedTime = time.toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
@@ -194,6 +193,12 @@ const MapScreen = ({ route }) => {
         break;
     }
   };
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateY: translateY.value }],
+    };
+  });
 
   const toggleStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: withSpring(toggleValue.value * 25) }],
@@ -330,10 +335,7 @@ const MapScreen = ({ route }) => {
 
       <PanGestureHandler onGestureEvent={panGesture}>
         <Animated.View
-          style={[
-            styles.card,
-            { transform: [{ translateY: translateY.value }], zIndex: 2 },
-          ]}
+          style={[styles.card, { transform: [{ translateY }], zIndex: 2 }]}
         >
           <View style={styles.cardHeader}>
             <View style={styles.horizontalRuler1} />
@@ -448,7 +450,6 @@ const MapScreen = ({ route }) => {
         </Animated.View>
       </PanGestureHandler>
 
-      {/* Yes Popup */}
       <Modal
         visible={isYesPopupVisible}
         animationType="slide"

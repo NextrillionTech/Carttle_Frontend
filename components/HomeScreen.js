@@ -109,8 +109,7 @@ const HomeScreen = ({ navigation }) => {
   };
   const openTimeSelection = (event) => {
     event.target.measure((fx, fy, width, height, px, py) => {
-      // Set the position of the dropdown to appear below the selected option
-      setDropdownPosition({ x: px, y: py + height });
+      setDropdownPosition({ x: 20, y: 670 });
       setShowRadioButtons(true);
     });
   };
@@ -219,7 +218,7 @@ const HomeScreen = ({ navigation }) => {
                   style={styles.profileImage}
                 />
                 <Text style={styles.userName}>Naina Kapoor</Text>
-                <Text style={styles.userEmail}>naina****@gmail.com</Text>
+                <Text style={styles.userEmail}>naina**@gmail.com</Text>
                 <View style={styles.menuOptions}>
                   <TouchableOpacity>
                     <Text style={styles.menuOptionText}>Profile</Text>
@@ -320,51 +319,51 @@ const HomeScreen = ({ navigation }) => {
         </View>
       )}
 
-      <Modal visible={modalVisible} animationType="slide">
+      <Modal visible={modalVisible} animationType="slide" transparent={true}>
         <TouchableWithoutFeedback
           onPress={() => {
             setModalVisible(false); // Close the modal on outside touch
             Keyboard.dismiss(); // Dismiss the keyboard if it's open
           }}
         >
-          <View style={styles.modalBackground}>
+          <View style={styles.modalContainer}>
             <View style={styles.horizontalRuler1} />
-            <View style={styles.modalContainer}>
-              <Text style={styles.heading}>Select address</Text>
-              <View style={styles.horizontalRuler} />
+            <Text style={styles.heading}>Select address</Text>
+            <View style={styles.horizontalRuler} />
 
-              <View style={styles.searchContainer}>
-                <Image
-                  source={require("../assets/loc.png")}
-                  style={styles.searchIcon}
-                />
-                <Text style={styles.currentLocationText}>{placeName}</Text>
-              </View>
-              <View style={styles.searchContainer}>
-                <Image
-                  source={require("../assets/loc.png")}
-                  style={styles.searchIcon}
-                />
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Search for a place"
-                  value={searchQuery}
-                  onChangeText={handleSearch}
-                />
-              </View>
-              <FlatList
-                data={suggestions}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={styles.suggestionItem}
-                    onPress={() => selectSuggestion(item)}
-                  >
-                    <Text style={styles.suggestionText}>{item.place_name}</Text>
-                  </TouchableOpacity>
-                )}
+            <View style={styles.searchContainer}>
+              <Image
+                source={require("../assets/loc.png")}
+                style={styles.searchIcon}
+              />
+              <Text style={styles.currentLocationText}>{placeName}</Text>
+            </View>
+
+            <View style={styles.searchContainer}>
+              <Image
+                source={require("../assets/loc.png")}
+                style={styles.searchIcon}
+              />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search for a place"
+                value={searchQuery}
+                onChangeText={handleSearch}
               />
             </View>
+
+            <FlatList
+              data={suggestions}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.suggestionItem}
+                  onPress={() => selectSuggestion(item)}
+                >
+                  <Text style={styles.suggestionText}>{item.place_name}</Text>
+                </TouchableOpacity>
+              )}
+            />
           </View>
         </TouchableWithoutFeedback>
       </Modal>
@@ -415,7 +414,20 @@ const styles = StyleSheet.create({
   },
   modalBackground: {
     flex: 1,
-    backgroundColor: "transparent",
+
+    backgroundColor: "white",
+  },
+  modalContainer: {
+    flex: 1,
+    padding: 25,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    backgroundColor: "white",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 }, // Moves shadow to top
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 2,
   },
   errorText: {
     fontSize: 16,
@@ -494,7 +506,7 @@ const styles = StyleSheet.create({
     alignContent: "center",
     alignSelf: "center",
     left: 1,
-    top: 30,
+    top: 10,
   },
 
   selectionContainer: {
@@ -532,7 +544,7 @@ const styles = StyleSheet.create({
     fontFamily: "poppins",
   },
   dropdownIcon: {
-    width: 15,
+    width: 30,
     height: 15,
     marginLeft: "auto",
   },
@@ -566,7 +578,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 70,
     left: 0,
-    right: 0,
     backgroundColor: "white",
     borderTopWidth: 1,
     borderTopColor: "#d3d3d3",
@@ -647,14 +658,6 @@ const styles = StyleSheet.create({
     fontFamily: "poppins",
   },
 
-  modalContainer: {
-    flex: 1,
-    padding: 25,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    height: "45%",
-    elevation: 1,
-  },
   searchContainer: {
     padding: 10,
     marginVertical: 5,
@@ -819,4 +822,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default HomeScreen;
+export default HomeScreen;

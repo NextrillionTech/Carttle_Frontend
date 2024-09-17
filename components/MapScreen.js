@@ -15,25 +15,8 @@ import * as Location from "expo-location";
 import axios from "axios";
 import { Picker } from "@react-native-picker/picker";
 import BottomNav from "./BottomNav";
-import {
-  GestureDetector,
-  PanGestureHandler,
-  State,
-} from "react-native-gesture-handler";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-} from "react-native-reanimated";
-import * as Font from "expo-font";
 
-const fetchFonts = () => {
-  return Font.loadAsync({
-    poppins: require("../assets/Poppins-Medium.ttf"),
-  });
-};
-
-const { height } = Dimensions.get("window");
+const { height, width } = Dimensions.get("window");
 
 const MapScreen = ({ route }) => {
   const [currentLocation, setCurrentLocation] = useState(null);
@@ -50,9 +33,7 @@ const MapScreen = ({ route }) => {
 
   const { destination } = route.params;
   const [activeTab, setActiveTab] = useState("home");
-  const translateY = useSharedValue(0);
   const [commuteRegularly, setCommuteRegularly] = useState(false);
-  const toggleValue = useSharedValue(commuteRegularly ? 1 : 0);
   const [seatsAvailable, setSeatsAvailable] = useState(1);
   const [amountPerSeat, setAmountPerSeat] = useState(100);
 
@@ -137,10 +118,6 @@ const MapScreen = ({ route }) => {
     setMenuVisible(!isMenuVisible);
   };
 
-  const closeMenu = () => {
-    setMenuVisible(false);
-  };
-
   const fetchRoute = async (origin, destination) => {
     const MAPBOX_TOKEN =
       "sk.eyJ1IjoibmV4dHJpbGxpb24tdGVjaCIsImEiOiJjbHpnaHdiaTkxb29xMmpxc3V5bTRxNWNkIn0.l4AsMHEMhAEO90klTb3oCQ"; // Replace with your token
@@ -177,44 +154,18 @@ const MapScreen = ({ route }) => {
     }
   };
 
-  const panGesture = (event) => {
-    const { nativeEvent } = event;
-
-    switch (nativeEvent.state) {
-      case State.BEGAN:
-        break;
-      case State.ACTIVE:
-        translateY.value = nativeEvent.translationY;
-        break;
-      case State.END:
-        translateY.value = withSpring(
-          translateY.value > -height / 4 ? 0 : -height / 2
-        );
-        break;
-    }
-  };
-
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ translateY: translateY.value }],
-    };
-  });
-
-  const toggleStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: withSpring(toggleValue.value * 25) }],
-  }));
-
   const handleToggle = () => {
     const newValue = !commuteRegularly;
     setCommuteRegularly(newValue);
-    toggleValue.value = withSpring(newValue ? 1 : 0);
     if (newValue) {
       setYesPopupVisible(true);
     }
   };
 
   const incrementSeats = () => {
-    setSeatsAvailable((prev) => prev + 1);
+    if (seatsAvailable < 3) {
+      setSeatsAvailable((prev) => prev + 1);
+    }
   };
 
   const decrementSeats = () => {
@@ -285,170 +236,164 @@ const MapScreen = ({ route }) => {
           style={[styles.icon, styles.menuIcon]}
         />
       </TouchableOpacity>
-      <Modal
-        visible={isMenuVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={closeMenu}
-      >
-        <TouchableWithoutFeedback onPress={closeMenu}>
-          <View>
-            <TouchableWithoutFeedback>
-              <View style={styles.sideMenu}>
-                <Image
-                  source={require("../assets/profilePic.jpg")}
-                  style={styles.profileImage}
-                />
-                <Text style={styles.userName}>Naina Kapoor</Text>
-                <Text style={styles.userEmail}>naina****@gmail.com</Text>
-                <View style={styles.menuOptions}>
-                  <TouchableOpacity>
-                    <Text style={styles.menuOptionText}>Profile</Text>
-                    <View style={styles.horizontalRuler2} />
-                  </TouchableOpacity>
-                  <TouchableOpacity>
-                    <Text style={styles.menuOptionText}>Trip History</Text>
-                    <View style={styles.horizontalRuler2} />
-                  </TouchableOpacity>
-                  <TouchableOpacity>
-                    <Text style={styles.menuOptionText}>About</Text>
-                    <View style={styles.horizontalRuler2} />
-                  </TouchableOpacity>
-                  <TouchableOpacity>
-                    <Text style={styles.menuOptionText}>Help</Text>
-                    <View style={styles.horizontalRuler2} />
-                  </TouchableOpacity>
-                  <TouchableOpacity>
-                    <Text style={styles.menuOptionText}>Sign Out</Text>
-                    <View style={styles.horizontalRuler2} />
-                  </TouchableOpacity>
-                </View>
+
+      {isMenuVisible && (
+        <View style={styles.sideMenu}>
+          <TouchableWithoutFeedback onPress={toggleMenu}>
+            <View>
+              <Image
+                source={require("../assets/profilePic.jpg")}
+                style={styles.profileImage}
+              />
+              <Text style={styles.userName}>Naina Kapoor</Text>
+              <Text style={styles.userEmail}>naina****@gmail.com</Text>
+              <View style={styles.menuOptions}>
+                <TouchableOpacity>
+                  <Text style={styles.menuOptionText}>Profile</Text>
+                  <View style={styles.horizontalRuler2} />
+                </TouchableOpacity>
+                <TouchableOpacity>
+                  <Text style={styles.menuOptionText}>Trip History</Text>
+                  <View style={styles.horizontalRuler2} />
+                </TouchableOpacity>
+                <TouchableOpacity>
+                  <Text style={styles.menuOptionText}>About</Text>
+                  <View style={styles.horizontalRuler2} />
+                </TouchableOpacity>
+                <TouchableOpacity>
+                  <Text style={styles.menuOptionText}>Help</Text>
+                  <View style={styles.horizontalRuler2} />
+                </TouchableOpacity>
+                <TouchableOpacity>
+                  <Text style={styles.menuOptionText}>Sign Out</Text>
+                  <View style={styles.horizontalRuler2} />
+                </TouchableOpacity>
               </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+            </View>
+          </TouchableWithoutFeedback>
+        </View>
+      )}
+
       <Image
         source={require("../assets/Bell_icon.png")}
         style={styles.topRightIcon}
       />
 
-      <PanGestureHandler onGestureEvent={panGesture}>
-        <Animated.View
-          style={[styles.card, { transform: [{ translateY }], zIndex: 2 }]}
-        >
-          <View style={styles.cardHeader}>
-            <View style={styles.horizontalRuler1} />
-            <Text style={styles.cardTitle}>
-              Please fill the below details to proceed...
-            </Text>
-          </View>
-          <View style={styles.horizontalRuler} />
-          <View style={styles.cardContent}>
-            <View style={styles.driverInfo}>
-              <Image
-                source={require("../assets/driver_avatar.png")}
-                style={styles.driverAvatar}
-              />
-              <View>
-                <Text style={styles.driverName}>HR26EM3749 (now)</Text>
-                <Text style={styles.driverLocation}>
-                  Udyog Vihar, Phase 1, 122001
-                </Text>
-                <Text style={styles.driverLocation}>
-                  Ambience Mall, Gurugram
-                </Text>
-              </View>
-              <Image
-                source={require("../assets/driver_car.png")}
-                style={styles.carImage}
-              />
-            </View>
-            <View style={styles.horizontalRuler} />
-            <View style={styles.detailsRow}>
-              <Image
-                source={require("../assets/seat_icon.png")}
-                style={styles.detailsIcon}
-              />
-
-              <Text style={styles.detailsLabel}>Seats Available</Text>
-              <View style={styles.seatControlContainer}>
-                <TouchableOpacity
-                  onPress={decrementSeats}
-                  style={styles.seatButton}
-                >
-                  <Text style={styles.seatButtonText}>-</Text>
-                </TouchableOpacity>
-                <Text style={styles.detailsValue}>
-                  {seatsAvailable} seat(s)
-                </Text>
-                <TouchableOpacity
-                  onPress={incrementSeats}
-                  style={styles.seatButton}
-                >
-                  <Text style={styles.seatButtonText}>+</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-            <View style={styles.horizontalRuler} />
-            <View style={styles.detailsRow}>
-              <Image
-                source={require("../assets/money_icon.png")}
-                style={styles.detailsIcon}
-              />
-              <Text style={styles.detailsLabel}>Amount Per Seat</Text>
-              <View style={styles.seatControlContainer}>
-                <TouchableOpacity
-                  onPress={decrementAmount}
-                  style={styles.seatButton}
-                >
-                  <Text style={styles.seatButtonText}>-</Text>
-                </TouchableOpacity>
-                <Text style={styles.detailsValue}>₹{amountPerSeat}.00</Text>
-                <TouchableOpacity
-                  onPress={incrementAmount}
-                  style={styles.seatButton}
-                >
-                  <Text style={styles.seatButtonText}>+</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-            <View style={styles.horizontalRuler} />
-            <View style={styles.detailsRow}>
-              <Text style={styles.detailsLabel1}>
-                Do you commute to this destination regularly?
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <View style={styles.horizontalRuler1} />
+          <Text style={styles.cardTitle}>
+            Please fill the below details to proceed...
+          </Text>
+        </View>
+        <View style={styles.horizontalRuler} />
+        <View style={styles.cardContent}>
+          <View style={styles.driverInfo}>
+            <Image
+              source={require("../assets/driver_avatar.png")}
+              style={styles.driverAvatar}
+            />
+            <View>
+              <Text style={styles.driverName}>HR26EM3749 (now)</Text>
+              <Text style={styles.driverLocation}>
+                Udyog Vihar, Phase 1, 122001
               </Text>
-              <TouchableOpacity
-                style={styles.toggleContainer}
-                onPress={handleToggle}
-              >
-                <View style={styles.ovalShape}>
-                  <Animated.View style={[styles.toggleCircle, toggleStyle]} />
-                  <View style={styles.textContainer}>
-                    <Text style={styles.toggleText}>
-                      {commuteRegularly ? "Yes" : ""}
-                    </Text>
-                    <Text style={styles.toggleText}>
-                      {commuteRegularly ? "" : "No"}
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
+              <Text style={styles.driverLocation}>
+                Ambience Mall, Gurugram
+              </Text>
             </View>
-
-            <View style={styles.confirmButtonContainer}>
-              <TouchableOpacity onPress={() => setYesPopupVisible(true)}>
-                <Text style={styles.confirmButtonText}>Confirm Details</Text>
-              </TouchableOpacity>
-            </View>
-            <BottomNav
-              activeTab={activeTab}
-              onTabPress={handleTabPress}
-              style={styles.bottomNav}
+            <Image
+              source={require("../assets/driver_car.png")}
+              style={styles.carImage}
             />
           </View>
-        </Animated.View>
-      </PanGestureHandler>
+          <View style={styles.horizontalRuler} />
+          <View style={styles.detailsRow}>
+            <Image
+              source={require("../assets/seat_icon.png")}
+              style={styles.detailsIcon}
+            />
+
+            <Text style={styles.detailsLabel}>Seats Available</Text>
+            <View style={styles.seatControlContainer}>
+              <TouchableOpacity
+                onPress={decrementSeats}
+                style={styles.seatButton}
+              >
+                <Text style={styles.seatButtonText}>-</Text>
+              </TouchableOpacity>
+              <Text style={styles.detailsValue}>
+                {seatsAvailable} seat(s)
+              </Text>
+              <TouchableOpacity
+                onPress={incrementSeats}
+                style={styles.seatButton}
+              >
+                <Text style={styles.seatButtonText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <View style={styles.horizontalRuler} />
+          <View style={styles.detailsRow}>
+            <Image
+              source={require("../assets/money_icon.png")}
+              style={styles.detailsIcon}
+            />
+            <Text style={styles.detailsLabel}>Amount Per Seat</Text>
+            <View style={styles.seatControlContainer}>
+              <TouchableOpacity
+                onPress={decrementAmount}
+                style={styles.seatButton}
+              >
+                <Text style={styles.seatButtonText}>-</Text>
+              </TouchableOpacity>
+              <Text style={styles.detailsValue}>₹{amountPerSeat}.00</Text>
+              <TouchableOpacity
+                onPress={incrementAmount}
+                style={styles.seatButton}
+              >
+                <Text style={styles.seatButtonText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <View style={styles.horizontalRuler} />
+          <View style={styles.detailsRow}>
+            <Text style={styles.detailsLabel1}>
+              Do you commute to this destination regularly?
+            </Text>
+            <TouchableOpacity
+              style={styles.toggleContainer}
+              onPress={handleToggle}
+            >
+              <View style={styles.ovalShape}>
+                <View style={styles.textContainer}>
+                  <Text style={styles.toggleText}>
+                    {commuteRegularly ? "Yes" : ""}
+                  </Text>
+                  <Text style={styles.toggleText}>
+                    {commuteRegularly ? "" : "No"}
+                  </Text>
+                </View>
+                <View style={[
+                  styles.toggleCircle,
+                  { backgroundColor: commuteRegularly ? "#4CAF50" : "#FFFFFF" }
+                ]} />
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.confirmButtonContainer}>
+            <TouchableOpacity onPress={() => setYesPopupVisible(true)}>
+              <Text style={styles.confirmButtonText}>Confirm Details</Text>
+            </TouchableOpacity>
+          </View>
+          <BottomNav
+            activeTab={activeTab}
+            onTabPress={handleTabPress}
+            style={styles.bottomNav}
+          />
+        </View>
+      </View>
 
       <Modal
         visible={isYesPopupVisible}
@@ -503,7 +448,6 @@ const MapScreen = ({ route }) => {
                 onPress={() => setCommuteBackRegularly((prev) => !prev)}
               >
                 <View style={styles.ovalShape}>
-                  <Animated.View style={[styles.toggleCircle, toggleStyle]} />
                   <View style={styles.textContainer}>
                     <Text style={styles.toggleText}>
                       {commuteBackRegularly ? "Yes" : ""}
@@ -512,6 +456,10 @@ const MapScreen = ({ route }) => {
                       {commuteBackRegularly ? "" : "No"}
                     </Text>
                   </View>
+                  <View style={[
+                    styles.toggleCircle,
+                    { backgroundColor: commuteBackRegularly ? "#4CAF50" : "#FFFFFF" }
+                  ]} />
                 </View>
               </TouchableOpacity>
             </View>
@@ -612,9 +560,11 @@ const styles = StyleSheet.create({
   },
   menuIcon: {
     position: "relative",
-    bottom: "815%",
+    bottom: "845%",
     margintop: 1,
     right: 160,
+    height: 40,
+    width: 40,
   },
   topRightIcon: {
     position: "absolute",
@@ -622,6 +572,55 @@ const styles = StyleSheet.create({
     right: 10,
     width: 40,
     height: 40,
+  },
+  sideMenu: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "60%",
+    height: "100%",
+    backgroundColor: "white",
+    borderTopRightRadius: 50,
+    borderBottomRightRadius: 50,
+    padding: 20,
+  },
+  profileImage: {
+    width: 80,
+    height: 80,
+    top: 25,
+    borderRadius: 40,
+    marginBottom: 30,
+  },
+  userName: {
+    fontSize: 20,
+    fontFamily: "poppins",
+  },
+  userEmail: {
+    fontSize: 10,
+    color: "gray",
+    fontFamily: "poppins",
+    marginBottom: 30,
+  },
+  menuOptionText: {
+    fontSize: 18,
+    alignContent: "center",
+    alignItems: "center",
+    fontFamily: "poppins",
+    paddingVertical: 10,
+  },
+  horizontalRuler: {
+    width: "100%",
+    height: 1,
+    backgroundColor: "#d3d3d3",
+    alignSelf: "center",
+    marginVertical: 10,
+  },
+  horizontalRuler2: {
+    width: "150%",
+    height: 1,
+    backgroundColor: "#d3d3d3",
+    alignSelf: "center",
+    marginVertical: 10,
   },
   card: {
     width: "100%",
@@ -656,11 +655,6 @@ const styles = StyleSheet.create({
   driverInfo: {
     flexDirection: "row",
     alignItems: "center",
-  },
-  horizontalLine: {
-    height: 1,
-    backgroundColor: "#ccc",
-    marginVertical: 10,
   },
   driverAvatar: {
     width: 60,
@@ -724,18 +718,16 @@ const styles = StyleSheet.create({
   seatButton: {
     backgroundColor: "#000000",
     padding: 5,
-    width: 22,
-    height: 22,
+    width: 30, // Increased width for better visibility
+    height: 30, // Increased height for better visibility
     borderRadius: 45,
     justifyContent: "center",
     marginHorizontal: 5,
   },
   seatButtonText: {
-    fontSize: 10,
-    marginBottom: 1,
+    fontSize: 16, // Increased font size for better visibility
     color: "#ffffff",
-    marginLeft: 3,
-    justifyContent: "center",
+    textAlign: "center", // Center the text
   },
   toggleContainer: {
     flexDirection: "row",
@@ -774,6 +766,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     flex: 1,
   },
+
   confirmButtonContainer: {
     marginTop: 10,
     backgroundColor: "#000000",
@@ -788,62 +781,6 @@ const styles = StyleSheet.create({
   errorText: {
     color: "red",
     marginTop: 10,
-  },
-  horizontalRuler: {
-    width: "100%",
-    height: 1,
-    backgroundColor: "#d3d3d3",
-    alignSelf: "center",
-    marginVertical: 10,
-  },
-  bottomNav: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "white",
-  },
-  horizontalRuler2: {
-    width: "150%",
-    height: 1,
-    backgroundColor: "#d3d3d3",
-    alignSelf: "center",
-    marginVertical: 10,
-  },
-
-  sideMenu: {
-    backgroundColor: "white",
-    width: "60%",
-    height: "100%",
-    borderTopRightRadius: 50,
-    borderBottomRightRadius: 50,
-    left: 0,
-    alignItems: "center",
-  },
-  profileImage: {
-    width: 80,
-    height: 80,
-    top: 25,
-    borderRadius: 40,
-    marginBottom: 30,
-  },
-  userName: {
-    fontSize: 20,
-    fontFamily: "poppins",
-  },
-  userEmail: {
-    fontSize: 10,
-    color: "gray",
-    fontFamily: "poppins",
-    marginBottom: 30,
-  },
-
-  menuOptionText: {
-    fontSize: 18,
-    alignContent: "center",
-    alignItems: "center",
-    fontFamily: "poppins",
-    paddingVertical: 10,
   },
 });
 

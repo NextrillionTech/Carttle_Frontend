@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   StyleSheet,
   ActivityIndicator,
   TouchableWithoutFeedback,
+  Animated,
   Text,
   Image,
   Modal,
@@ -26,6 +27,8 @@ const MapScreen = ({ route }) => {
   const [isMenuVisible, setMenuVisible] = useState(false);
   const [isYesPopupVisible, setYesPopupVisible] = useState(false);
   const [selectedDateRange, setSelectedDateRange] = useState("");
+
+  const slideAnim = useRef(new Animated.Value(-300)).current;
   const [selectedTime, setSelectedTime] = useState("");
   const [dateOptions, setDateOptions] = useState([]);
   const [timeOptions, setTimeOptions] = useState([]);
@@ -36,6 +39,16 @@ const MapScreen = ({ route }) => {
   const [commuteRegularly, setCommuteRegularly] = useState(false);
   const [seatsAvailable, setSeatsAvailable] = useState(1);
   const [amountPerSeat, setAmountPerSeat] = useState(100);
+
+  const closeMenu = () => {
+    Animated.timing(slideAnim, {
+      toValue: -300, // Slide out to the left
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setMenuVisible(false);
+    });
+  };
 
   useEffect(() => {
     (async () => {
@@ -115,7 +128,16 @@ const MapScreen = ({ route }) => {
   };
 
   const toggleMenu = () => {
-    setMenuVisible(!isMenuVisible);
+    if (isMenuVisible) {
+      closeMenu();
+    } else {
+      setMenuVisible(true);
+      Animated.timing(slideAnim, {
+        toValue: 0, // Slide in to the center
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
   };
 
   const fetchRoute = async (origin, destination) => {
@@ -238,9 +260,16 @@ const MapScreen = ({ route }) => {
       </TouchableOpacity>
 
       {isMenuVisible && (
-        <View style={styles.sideMenu}>
-          <TouchableWithoutFeedback onPress={toggleMenu}>
-            <View>
+        <TouchableWithoutFeedback onPress={closeMenu}>
+          <Animated.View
+            style={[
+              styles.sideMenu,
+              {
+                transform: [{ translateX: slideAnim }],
+              },
+            ]}
+          >
+            <View style={styles.menuBackground}>
               <Image
                 source={require("../assets/profilePic.jpg")}
                 style={styles.profileImage}
@@ -270,8 +299,8 @@ const MapScreen = ({ route }) => {
                 </TouchableOpacity>
               </View>
             </View>
-          </TouchableWithoutFeedback>
-        </View>
+          </Animated.View>
+        </TouchableWithoutFeedback>
       )}
 
       <Image
@@ -298,9 +327,7 @@ const MapScreen = ({ route }) => {
               <Text style={styles.driverLocation}>
                 Udyog Vihar, Phase 1, 122001
               </Text>
-              <Text style={styles.driverLocation}>
-                Ambience Mall, Gurugram
-              </Text>
+              <Text style={styles.driverLocation}>Ambience Mall, Gurugram</Text>
             </View>
             <Image
               source={require("../assets/driver_car.png")}
@@ -322,9 +349,7 @@ const MapScreen = ({ route }) => {
               >
                 <Text style={styles.seatButtonText}>-</Text>
               </TouchableOpacity>
-              <Text style={styles.detailsValue}>
-                {seatsAvailable} seat(s)
-              </Text>
+              <Text style={styles.detailsValue}>{seatsAvailable} seat(s)</Text>
               <TouchableOpacity
                 onPress={incrementSeats}
                 style={styles.seatButton}
@@ -374,10 +399,14 @@ const MapScreen = ({ route }) => {
                     {commuteRegularly ? "" : "No"}
                   </Text>
                 </View>
-                <View style={[
-                  styles.toggleCircle,
-                  { backgroundColor: commuteRegularly ? "#4CAF50" : "#FFFFFF" }
-                ]} />
+                <View
+                  style={[
+                    styles.toggleCircle,
+                    {
+                      backgroundColor: commuteRegularly ? "#4CAF50" : "#FFFFFF",
+                    },
+                  ]}
+                />
               </View>
             </TouchableOpacity>
           </View>
@@ -456,10 +485,16 @@ const MapScreen = ({ route }) => {
                       {commuteBackRegularly ? "" : "No"}
                     </Text>
                   </View>
-                  <View style={[
-                    styles.toggleCircle,
-                    { backgroundColor: commuteBackRegularly ? "#4CAF50" : "#FFFFFF" }
-                  ]} />
+                  <View
+                    style={[
+                      styles.toggleCircle,
+                      {
+                        backgroundColor: commuteBackRegularly
+                          ? "#4CAF50"
+                          : "#FFFFFF",
+                      },
+                    ]}
+                  />
                 </View>
               </TouchableOpacity>
             </View>
@@ -573,17 +608,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
   },
-  sideMenu: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: "60%",
-    height: "100%",
-    backgroundColor: "white",
-    borderTopRightRadius: 50,
-    borderBottomRightRadius: 50,
-    padding: 20,
-  },
+
   profileImage: {
     width: 80,
     height: 80,
@@ -781,6 +806,20 @@ const styles = StyleSheet.create({
   errorText: {
     color: "red",
     marginTop: 10,
+  },
+
+  sideMenu: {
+    position: "absolute",
+    top: 0,
+    elevation: 5,
+    zIndex: 2,
+    backgroundColor: "white",
+    width: "60%",
+    height: "100%",
+    borderTopRightRadius: 50,
+    borderBottomRightRadius: 50,
+    left: 0,
+    alignItems: "center",
   },
 });
 

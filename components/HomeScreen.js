@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   StyleSheet,
   View,
@@ -7,8 +7,9 @@ import {
   Alert,
   Image,
   TouchableOpacity,
-  Modal,
+  Animated,
   TextInput,
+  Modal,
   FlatList,
   TouchableWithoutFeedback,
   Keyboard,
@@ -43,6 +44,7 @@ const HomeScreen = ({ navigation }) => {
   const [isMenuVisible, setMenuVisible] = useState(false);
   const [placeName, setPlaceName] = useState("Fetching current location...");
   const [dropdownPosition, setDropdownPosition] = useState(null);
+  const slideAnim = useRef(new Animated.Value(-300)).current; // Start off-screen
 
   const openNotifications = () => {
     // Navigate to the Notifications screen
@@ -56,13 +58,30 @@ const HomeScreen = ({ navigation }) => {
     };
     loadFonts();
   }, []);
+
   const toggleMenu = () => {
-    setMenuVisible(!isMenuVisible);
+    if (isMenuVisible) {
+      closeMenu();
+    } else {
+      setMenuVisible(true);
+      Animated.timing(slideAnim, {
+        toValue: 0, // Slide in to the center
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
   };
 
   const closeMenu = () => {
-    setMenuVisible(false);
+    Animated.timing(slideAnim, {
+      toValue: -300, // Slide out to the left
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setMenuVisible(false);
+    });
   };
+
   useEffect(() => {
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
@@ -107,12 +126,14 @@ const HomeScreen = ({ navigation }) => {
       setPlaceName("Unknown location");
     }
   };
+
   const openTimeSelection = (event) => {
     event.target.measure((fx, fy, width, height, px, py) => {
       setDropdownPosition({ x: 20, y: 670 });
       setShowRadioButtons(true);
     });
   };
+
   const handleTabPress = (tab) => {
     setActiveTab(tab);
     if (tab === "home") {
@@ -149,6 +170,7 @@ const HomeScreen = ({ navigation }) => {
       setSuggestions([]);
     }
   };
+
   const renderRadioButton = (time) => (
     <TouchableOpacity
       onPress={() => selectTime(time)}
@@ -160,11 +182,11 @@ const HomeScreen = ({ navigation }) => {
       <Text style={styles.radioButtonLabel}>{time}</Text>
     </TouchableOpacity>
   );
+
   const selectSuggestion = (suggestion) => {
     setSearchQuery(suggestion.place_name);
     setModalVisible(false);
 
-    // Navigate to the MapRouteScreen with the selected destination
     navigation.navigate("MapScreen", {
       destination: {
         latitude: suggestion.geometry.coordinates[1],
@@ -203,49 +225,50 @@ const HomeScreen = ({ navigation }) => {
           style={[styles.icon, styles.menuIcon]}
         />
       </TouchableOpacity>
-      <Modal
-        visible={isMenuVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={closeMenu}
-      >
+
+      {isMenuVisible && (
         <TouchableWithoutFeedback onPress={closeMenu}>
-          <View>
-            <TouchableWithoutFeedback>
-              <View style={styles.sideMenu}>
-                <Image
-                  source={require("../assets/profilePic.jpg")}
-                  style={styles.profileImage}
-                />
-                <Text style={styles.userName}>Naina Kapoor</Text>
-                <Text style={styles.userEmail}>naina**@gmail.com</Text>
-                <View style={styles.menuOptions}>
-                  <TouchableOpacity>
-                    <Text style={styles.menuOptionText}>Profile</Text>
-                    <View style={styles.horizontalRuler2} />
-                  </TouchableOpacity>
-                  <TouchableOpacity>
-                    <Text style={styles.menuOptionText}>Trip History</Text>
-                    <View style={styles.horizontalRuler2} />
-                  </TouchableOpacity>
-                  <TouchableOpacity>
-                    <Text style={styles.menuOptionText}>About</Text>
-                    <View style={styles.horizontalRuler2} />
-                  </TouchableOpacity>
-                  <TouchableOpacity>
-                    <Text style={styles.menuOptionText}>Help</Text>
-                    <View style={styles.horizontalRuler2} />
-                  </TouchableOpacity>
-                  <TouchableOpacity>
-                    <Text style={styles.menuOptionText}>Sign Out</Text>
-                    <View style={styles.horizontalRuler2} />
-                  </TouchableOpacity>
-                </View>
+          <Animated.View
+            style={[
+              styles.sideMenu,
+              {
+                transform: [{ translateX: slideAnim }],
+              },
+            ]}
+          >
+            <View style={styles.menuBackground}>
+              <Image
+                source={require("../assets/profilePic.jpg")}
+                style={styles.profileImage}
+              />
+              <Text style={styles.userName}>Naina Kapoor</Text>
+              <Text style={styles.userEmail}>naina****@gmail.com</Text>
+              <View style={styles.menuOptions}>
+                <TouchableOpacity>
+                  <Text style={styles.menuOptionText}>Profile</Text>
+                  <View style={styles.horizontalRuler2} />
+                </TouchableOpacity>
+                <TouchableOpacity>
+                  <Text style={styles.menuOptionText}>Trip History</Text>
+                  <View style={styles.horizontalRuler2} />
+                </TouchableOpacity>
+                <TouchableOpacity>
+                  <Text style={styles.menuOptionText}>About</Text>
+                  <View style={styles.horizontalRuler2} />
+                </TouchableOpacity>
+                <TouchableOpacity>
+                  <Text style={styles.menuOptionText}>Help</Text>
+                  <View style={styles.horizontalRuler2} />
+                </TouchableOpacity>
+                <TouchableOpacity>
+                  <Text style={styles.menuOptionText}>Sign Out</Text>
+                  <View style={styles.horizontalRuler2} />
+                </TouchableOpacity>
               </View>
-            </TouchableWithoutFeedback>
-          </View>
+            </View>
+          </Animated.View>
         </TouchableWithoutFeedback>
-      </Modal>
+      )}
       <View style={styles.headerContainer}>
         <TouchableOpacity
           onPress={openNotifications}
@@ -463,6 +486,20 @@ const styles = StyleSheet.create({
     right: 10,
     flex: 1,
   },
+  sideMenu: {
+    position: "absolute",
+    top: 0,
+    elevation: 5,
+    zIndex: 2,
+    backgroundColor: "white",
+    width: "60%",
+    height: "100%",
+    borderTopRightRadius: 50,
+    borderBottomRightRadius: 50,
+    left: 0,
+    alignItems: "center",
+  },
+
   overlayContainer: {
     position: "absolute",
     bottom: 60,
@@ -785,15 +822,6 @@ const styles = StyleSheet.create({
     marginVertical: 10, // Optional: Adjust vertical spacing
   },
 
-  sideMenu: {
-    backgroundColor: "white",
-    width: "60%",
-    height: "100%",
-    borderTopRightRadius: 50, // Top right corner radius
-    borderBottomRightRadius: 50, // Bottom right corner radius
-    left: 0,
-    alignItems: "center", // Center align the contents horizontally
-  },
   profileImage: {
     width: 80,
     height: 80,
@@ -822,4 +850,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default HomeScreen;
+export default HomeScreen;

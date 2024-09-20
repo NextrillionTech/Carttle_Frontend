@@ -9,6 +9,7 @@ import {
   Dimensions,
   FlatList,
 } from "react-native";
+import axios from "axios";
 import { useNavigation } from "@react-navigation/native";
 import * as Font from "expo-font";
 import DropDownPicker from "react-native-dropdown-picker";
@@ -52,8 +53,39 @@ const DriverSignup = () => {
     navigation.goBack();
   };
 
-  const handleCreateAccount = () => {
-    // Handle account creation
+  const handleCreateAccount = async () => {
+    if (!name || !phone || !password) {
+      alert("Please fill out all fields.");
+      return;
+    }
+
+    try {
+      const response = await fetch("http://192.168.29.99:3000/api/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: name,
+          phonenumber: phone,
+          password: password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Account created successfully
+        alert("Account created successfully!");
+        navigation.navigate("DriverLogin"); // Navigate to login screen
+      } else {
+        // Handle errors returned from the backend
+        alert(data.msg || "Something went wrong, please try again.");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Failed to create account. Please try again.");
+    }
   };
 
   const handlePhoneChange = (text) => {

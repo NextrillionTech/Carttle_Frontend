@@ -177,11 +177,14 @@ const MapScreen = ({ route }) => {
   };
 
   const handleToggle = () => {
-    const newValue = !commuteRegularly;
-    setCommuteRegularly(newValue);
-    if (newValue) {
-      setYesPopupVisible(true);
-    }
+    // Prevent multiple state updates within the same render cycle
+    setCommuteRegularly((prevValue) => {
+      const newValue = !prevValue; // Toggle the value
+      if (newValue) {
+        setYesPopupVisible(true); // Show popup only when toggling to 'Yes'
+      }
+      return newValue; // Return the new state value
+    });
   };
 
   const incrementSeats = () => {
@@ -403,7 +406,12 @@ const MapScreen = ({ route }) => {
                   style={[
                     styles.toggleCircle,
                     {
-                      backgroundColor: commuteRegularly ? "#4CAF50" : "#FFFFFF",
+                      backgroundColor: "#FFFFFF", // Always white
+                      transform: [
+                        {
+                          translateX: commuteRegularly ? 30 : 0, // Move the toggle
+                        },
+                      ],
                     },
                   ]}
                 />
@@ -469,29 +477,33 @@ const MapScreen = ({ route }) => {
             </View>
             <View style={styles.detailsRow}>
               <Text style={styles.detailsLabel1}>
-                Do you make the commute back from the same destination
-                regularly?
+                Do you commute to this destination regularly?
               </Text>
               <TouchableOpacity
                 style={styles.toggleContainer}
-                onPress={() => setCommuteBackRegularly((prev) => !prev)}
+                onPress={handleToggle}
               >
                 <View style={styles.ovalShape}>
                   <View style={styles.textContainer}>
-                    <Text style={styles.toggleText}>
-                      {commuteBackRegularly ? "Yes" : ""}
-                    </Text>
-                    <Text style={styles.toggleText}>
-                      {commuteBackRegularly ? "" : "No"}
-                    </Text>
+                    <View style={styles.textContainer}>
+                      <Text style={styles.toggleText}>
+                        {commuteRegularly ? "Yes" : ""}
+                      </Text>
+                      <Text style={styles.toggleText}>
+                        {commuteRegularly ? "" : "No"}
+                      </Text>
+                    </View>
                   </View>
                   <View
                     style={[
                       styles.toggleCircle,
                       {
-                        backgroundColor: commuteBackRegularly
-                          ? "#4CAF50"
-                          : "#FFFFFF",
+                        backgroundColor: "#FFFFFF", // Always white
+                        transform: [
+                          {
+                            translateX: commuteRegularly ? 30 : 0, // Move the toggle
+                          },
+                        ],
                       },
                     ]}
                   />

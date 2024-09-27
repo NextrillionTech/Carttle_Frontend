@@ -60,7 +60,7 @@ const DriverSignup = () => {
     }
 
     try {
-      const response = await fetch("http://192.168.1.9:3000/api/signup", {
+      const response = await fetch("http://192.168.1.4:3000/auth/api/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -77,7 +77,7 @@ const DriverSignup = () => {
       if (response.ok) {
         // Account created successfully
         alert("Account created successfully!");
-        navigation.navigate("DriverLogin"); // Navigate to login screen
+        navigation.navigate("DriverVerification"); // Navigate to login screen
       } else {
         // Handle errors returned from the backend
         alert(data.msg || "Something went wrong, please try again.");

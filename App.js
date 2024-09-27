@@ -16,7 +16,6 @@ import MessageScreen from "./components/MessageScreen";
 import MapScreen from "./components/MapScreen";
 import NotificationScreen from "./components/NotificationScreen";
 import RidesScreen from "./components/NotificationScreen";
-import DriverVerification from "./components/DriverVerification";
 
 const Stack = createStackNavigator();
 
@@ -62,11 +61,6 @@ function App() {
         <Stack.Screen
           name="DriverSignup"
           component={DriverSignup}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="DriverVerification"
-          component={DriverVerification}
           options={{ headerShown: false }}
         />
         <Stack.Screen

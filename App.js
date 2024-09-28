@@ -11,6 +11,7 @@ import TravellerWelcome from "./components/TravellerWelcome";
 import DriverWelcome from "./components/DriverWelcome";
 import DriverLogin from "./components/DriverLogin";
 import DriverSignup from "./components/DriverSignup";
+import DriverVerification from "./components/DriverVerification";
 import HomeScreen from "./components/HomeScreen";
 import MessageScreen from "./components/MessageScreen";
 import MapScreen from "./components/MapScreen";
@@ -64,6 +65,11 @@ function App() {
           options={{ headerShown: false }}
         />
         <Stack.Screen
+          name="DriverVerification"
+          component={DriverVerification}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
           name="HomeScreen"
           component={HomeScreen}
           options={{ headerShown: false }}
@@ -93,4 +99,4 @@ function App() {
   );
 }
 
-export default App;
+export default App;

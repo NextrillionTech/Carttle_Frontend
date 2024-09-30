@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
     left: 160,
   },
   locationIcon: {
-    top: "55%",
+    top: "52%",
     position: "absolute",
 
     right: 10,

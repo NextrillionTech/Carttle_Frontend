@@ -9,7 +9,7 @@ import {
   Dimensions,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import * as Font from "expo-font";
+import AsyncStorage from "@react-native-async-storage/async-storage"; // Import AsyncStorage
 import { useFonts } from "expo-font";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -38,7 +38,7 @@ const DriverLogin = () => {
     }
 
     try {
-      const response = await fetch("http://192.168.32.138:3000/api/signin", {
+      const response = await fetch("http://192.168.1.5:3000/auth/api/signin", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -53,9 +53,16 @@ const DriverLogin = () => {
 
       if (response.ok) {
         alert("Login successful!");
+
+        // Store user ID in AsyncStorage
+        await AsyncStorage.setItem("userId", data._id); // Assuming data._id is the user ID
+
+        // Retrieve and log the user ID to check if it's stored
+        const storedUserId = await AsyncStorage.getItem("userId");
+        console.log("Stored User ID:", storedUserId);
+
         navigation.navigate("HomeScreen"); // Navigate to home screen after login
       } else {
-        // Handle errors returned from the backend
         alert(data.msg || "Invalid credentials, please try again.");
       }
     } catch (error) {

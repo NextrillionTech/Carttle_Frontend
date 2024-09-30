@@ -11,6 +11,7 @@ import {
   Dimensions,
   TouchableOpacity,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import * as Location from "expo-location";
 import axios from "axios";
@@ -27,6 +28,8 @@ const MapScreen = ({ route }) => {
   const [isMenuVisible, setMenuVisible] = useState(false);
   const [isYesPopupVisible, setYesPopupVisible] = useState(false);
   const [selectedDateRange, setSelectedDateRange] = useState("");
+
+  const navigation = useNavigation();
 
   const slideAnim = useRef(new Animated.Value(-300)).current;
   const [selectedTime, setSelectedTime] = useState("");
@@ -164,7 +167,6 @@ const MapScreen = ({ route }) => {
       setLoading(false);
     }
   };
-
   const handleTabPress = (tab) => {
     setActiveTab(tab);
     if (tab === "home") {
@@ -608,14 +610,14 @@ const styles = StyleSheet.create({
   menuIcon: {
     position: "relative",
     bottom: "845%",
-    margintop: 1,
+    margintop: 9,
     right: 160,
     height: 40,
     width: 40,
   },
   topRightIcon: {
     position: "absolute",
-    top: 60,
+    top: 43,
     right: 10,
     width: 40,
     height: 40,
@@ -661,7 +663,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: "100%",
-    height: "62%",
+    height: "65%",
     backgroundColor: "#fff",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,

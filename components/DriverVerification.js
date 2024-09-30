@@ -7,10 +7,14 @@ import {
   Dimensions,
   Platform,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useNavigation } from "@react-navigation/native";
 import * as Font from "expo-font";
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage"; // Import AsyncStorage
+
 const { width, height } = Dimensions.get("window");
 
 // Load fonts
@@ -21,12 +25,15 @@ const fetchFonts = () => {
 };
 
 const DriverVerification = () => {
-  const navigation = useNavigation(); // Accessing the navigation object
+  const navigation = useNavigation();
   const [date, setDate] = useState(new Date());
   const [show, setShow] = useState(false);
+  const [licenseNumber, setLicenseNumber] = useState("");
+  const [carRegNumber, setCarRegNumber] = useState("");
   const [fontsLoaded, setFontsLoaded] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userId, setUserId] = useState(""); // State for user ID
 
-  // Load fonts
   useEffect(() => {
     const loadFonts = async () => {
       try {
@@ -38,29 +45,103 @@ const DriverVerification = () => {
     };
 
     loadFonts();
+
+    // Retrieve user ID from AsyncStorage
+    const getUserId = async () => {
+      try {
+        const id = await AsyncStorage.getItem("userId"); // Use the key you stored it under
+        if (id) {
+          setUserId(id);
+        } else {
+          Alert.alert("Error", "User ID not found. Please log in again.");
+        }
+      } catch (error) {
+        console.error("Error retrieving user ID:", error);
+      }
+    };
+
+    getUserId();
   }, []);
 
-  // Date picker change handler
   const onChange = (event, selectedDate) => {
     const currentDate = selectedDate || date;
-    setShow(Platform.OS === "ios"); // Keep it open on iOS, close on Android
+    setShow(Platform.OS === "ios");
     setDate(currentDate);
   };
 
-  const handleConfirm = () => {
-    navigation.navigate("MapScreen");
+  const handleConfirm = async () => {
+    if (!licenseNumber || !carRegNumber || !date) {
+      Alert.alert("Validation Error", "Please fill all the required fields.");
+      return;
+    }
+
+    // Convert the date to DD-MM-YYYY format
+    const dobFormatted = new Date(date)
+      .toLocaleDateString("en-GB")
+      .replace(/\//g, "-"); // Example: "27-08-2000"
+
+    const dlData = {
+      userId: userId, // Using dynamic user ID
+      dlnumber: licenseNumber,
+      dob: dobFormatted,
+    };
+
+    const rcData = {
+      userId: userId, // Using dynamic user ID
+      regNumber: carRegNumber,
+    };
+
+    setIsSubmitting(true);
+
+    try {
+      // First, verify driving license
+      const dlResponse = await axios.post(
+        "http://192.168.1.5:3000/verify-dl",
+        dlData
+      );
+
+      if (dlResponse.status === 200) {
+        // If DL verification is successful, proceed with RC verification
+        const rcResponse = await axios.post(
+          "http://192.168.1.5:3000/verify-rc",
+          rcData
+        );
+
+        if (rcResponse.status === 200) {
+          Alert.alert("Success", "Your DL and RC details have been verified!");
+          navigation.navigate("HomeScreen");
+        } else {
+          Alert.alert(
+            "RC Verification Failed",
+            rcResponse.data.error || "Unknown error occurred"
+          );
+        }
+      } else {
+        Alert.alert(
+          "DL Verification Failed",
+          dlResponse.data.error || "Unknown error occurred"
+        );
+      }
+    } catch (error) {
+      console.error(
+        "Error verifying driving license or registration:",
+        error.response ? error.response.data : error.message
+      );
+
+      Alert.alert("Error", "Failed to verify your details. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleSkip = () => {
-    navigation.navigate("MapScreen");
+    navigation.navigate("HomeScreen");
   };
 
-  // Show date picker on tap
   const showDatepicker = () => {
     setShow(true);
   };
 
-  // If fonts are not yet loaded, show loading indicator
   if (!fontsLoaded) {
     return <ActivityIndicator size="large" color="#0000ff" />;
   }
@@ -72,23 +153,28 @@ const DriverVerification = () => {
         Earnings!!
       </Text>
 
-      <View style={styles.inputContainer1}>
-        <Text style={styles.placeholder}>
-          Driving License Number<Text style={styles.requiredAsterisk}>*</Text>
-        </Text>
-        <TextInput style={styles.input} />
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          value={licenseNumber}
+          onChangeText={setLicenseNumber}
+          placeholder="Driving License Number*"
+          placeholderTextColor="#7C7C7C"
+        />
       </View>
 
-      <View style={styles.inputContainer1}>
-        <Text style={styles.placeholder}>
-          Car Registration Number (Number Plate)
-          <Text style={styles.requiredAsterisk}>*</Text>
-        </Text>
-        <TextInput style={styles.input} />
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          value={carRegNumber}
+          onChangeText={setCarRegNumber}
+          placeholder="Car Registration Number*"
+          placeholderTextColor="#7C7C7C"
+        />
       </View>
 
       <TouchableOpacity onPress={showDatepicker} style={styles.inputContainer}>
-        <Text style={styles.placeholder1}>
+        <Text style={styles.placeholder}>
           {date ? date.toDateString() : "Date of Birth (DD/MM/YYYY)"}
           <Text style={styles.requiredAsterisk}>*</Text>
         </Text>
@@ -102,15 +188,23 @@ const DriverVerification = () => {
           onChange={onChange}
         />
       )}
+
       <TouchableOpacity
-        style={[styles.Confirmbutton]}
+        style={styles.Confirmbutton}
         onPress={handleConfirm}
+        disabled={isSubmitting}
       >
-        <Text style={styles.buttonText}>Confirm</Text>
+        {isSubmitting ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>Confirm</Text>
+        )}
       </TouchableOpacity>
+
       <Text style={styles.line1}>
         You would not be able to provide rides if you,
       </Text>
+
       <TouchableOpacity onPress={handleSkip}>
         <Text style={styles.skip}>Skip For Now </Text>
       </TouchableOpacity>
@@ -137,8 +231,11 @@ const styles = {
     fontSize: 14,
     color: "#000",
     paddingVertical: 10,
-    height: 25,
+    paddingHorizontal: 15,
+    height: 45,
     borderRadius: 5,
+    borderColor: "#E0E0E0",
+    borderWidth: 1,
   },
   placeholder: {
     fontFamily: "poppins",
@@ -146,16 +243,7 @@ const styles = {
     color: "#7C7C7C",
     marginTop: 7,
     paddingHorizontal: 15,
-    textAlign: 'left',
-    top: 12,
-  },
-  placeholder1: {
-    fontFamily: "poppins",
-    fontSize: 14,
-    color: "#7C7C7C",
-    marginTop: 7,
-    paddingHorizontal: 15,
-    textAlign: 'left',
+    textAlign: "left",
   },
   Confirmbutton: {
     backgroundColor: "#000",
@@ -189,20 +277,11 @@ const styles = {
     color: "#000",
   },
   inputContainer: {
-    flexDirection: "column",
     borderWidth: 1,
     borderColor: "#E0E0E0",
     borderRadius: 10,
     marginBottom: 18,
     paddingVertical: 10,
-  },
-  inputContainer1: {
-    flexDirection: "column",
-    borderWidth: 1,
-    borderColor: "#E0E0E0",
-    borderRadius: 10,
-    marginBottom: 18,
-    paddingVertical: 1,
   },
 };
 

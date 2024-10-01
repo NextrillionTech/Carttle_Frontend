@@ -96,14 +96,14 @@ const DriverVerification = () => {
     try {
       // First, verify driving license
       const dlResponse = await axios.post(
-        "http://192.168.1.5:3000/verify-dl",
+        "http://10.11.52.77:3000/verify-dl",
         dlData
       );
 
       if (dlResponse.status === 200) {
         // If DL verification is successful, proceed with RC verification
         const rcResponse = await axios.post(
-          "http://192.168.1.5:3000/verify-rc",
+          "http://10.11.52.77:3000/verify-rc",
           rcData
         );
 

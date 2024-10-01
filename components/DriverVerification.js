@@ -189,25 +189,28 @@ const DriverVerification = () => {
         />
       )}
 
-      <TouchableOpacity
-        style={styles.Confirmbutton}
-        onPress={handleConfirm}
-        disabled={isSubmitting}
-      >
-        {isSubmitting ? (
-          <ActivityIndicator size="small" color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Confirm</Text>
-        )}
-      </TouchableOpacity>
+      {/* Grouped Confirm button, line1, and skip text */}
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={styles.Confirmbutton}
+          onPress={handleConfirm}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Confirm</Text>
+          )}
+        </TouchableOpacity>
 
-      <Text style={styles.line1}>
-        You would not be able to provide rides if you,
-      </Text>
+        <Text style={styles.line1}>
+          You would not be able to provide rides if you,
+        </Text>
 
-      <TouchableOpacity onPress={handleSkip}>
-        <Text style={styles.skip}>Skip For Now </Text>
-      </TouchableOpacity>
+        <TouchableOpacity onPress={handleSkip}>
+          <Text style={styles.skip}>Skip For Now </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -216,13 +219,14 @@ const styles = {
   container: {
     flex: 1,
     padding: 20,
-    justifyContent: "center",
+    justifyContent: "flex-start",
     backgroundColor: "#FFFFFF",
   },
   heading: {
     fontFamily: "poppins",
-    fontSize: 18,
-    textAlign: "center",
+    fontSize: 25,
+    marginTop: 120,
+    textAlign: "left",
     marginBottom: 25,
     color: "#000",
   },
@@ -230,6 +234,7 @@ const styles = {
     fontFamily: "poppins",
     fontSize: 14,
     color: "#000",
+    height: 50,
     paddingVertical: 10,
     paddingHorizontal: 15,
     height: 45,
@@ -241,21 +246,19 @@ const styles = {
     fontFamily: "poppins",
     fontSize: 14,
     color: "#7C7C7C",
-    marginTop: 7,
     paddingHorizontal: 15,
-    textAlign: "left",
   },
   Confirmbutton: {
     backgroundColor: "#000",
-    borderRadius: width * 0.02,
-    padding: width * 0.04,
-    height: height * 0.07,
+    borderRadius: 10,
+    padding: 15,
+    height: 50,
     alignItems: "center",
-    marginTop: height * 0.17,
+    justifyContent: "center",
   },
   buttonText: {
     color: "#fff",
-    fontSize: width * 0.04,
+    fontSize: 16,
     fontFamily: "poppins",
   },
   line1: {
@@ -277,11 +280,16 @@ const styles = {
     color: "#000",
   },
   inputContainer: {
-    borderWidth: 1,
-    borderColor: "#E0E0E0",
-    borderRadius: 10,
     marginBottom: 18,
     paddingVertical: 10,
+  },
+  footer: {
+    flex: 1, // Take up remaining space
+    justifyContent: "flex-end", // Push content to the bottom
+    paddingBottom: 20, // Add some padding at the bottom
+  },
+  contentContainer: {
+    marginTop: 28, // Adjust this value to move the content down
   },
 };
 

@@ -18,6 +18,8 @@ import MapScreen from "./components/MapScreen";
 import NotificationScreen from "./components/NotificationScreen";
 import RidesScreen from "./components/NotificationScreen";
 
+import RideSuccessful from "./components/RideSuccessful";
+
 const Stack = createStackNavigator();
 
 function App() {
@@ -80,6 +82,11 @@ function App() {
           options={{ headerShown: false }}
         />
         <Stack.Screen
+          name="RideSuccessful"
+          component={RideSuccessful}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
           name="MessageScreen"
           component={MessageScreen}
           options={{ headerShown: false }}
@@ -99,4 +106,4 @@ function App() {
   );
 }
 
-export default App;
+export default App;

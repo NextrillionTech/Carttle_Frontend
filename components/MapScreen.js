@@ -11,11 +11,13 @@ import {
   Dimensions,
   TouchableOpacity,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage"; // Import AsyncStorage
+
 import { useNavigation } from "@react-navigation/native";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import * as Location from "expo-location";
 import axios from "axios";
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
 import BottomNav from "./BottomNav";
 
@@ -42,7 +44,7 @@ const MapScreen = ({ route }) => {
   const [activeTab, setActiveTab] = useState("home");
   const [commuteRegularly, setCommuteRegularly] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
-  const [selectedWeek, setSelectedWeek] = useState('');
+  const [selectedWeek, setSelectedWeek] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [date, setDate] = useState(new Date());
@@ -53,7 +55,7 @@ const MapScreen = ({ route }) => {
 
   const closeMenu = () => {
     Animated.timing(slideAnim, {
-      toValue: -300, 
+      toValue: -300,
       duration: 300,
       useNativeDriver: true,
     }).start(() => {
@@ -118,17 +120,6 @@ const MapScreen = ({ route }) => {
     return `${day}/${month}/${year}`;
   };
 
-  const formatTime = (time) => {
-    let hours = time.getHours();
-    let minutes = time.getMinutes();
-    const ampm = hours >= 12 ? 'PM' : 'AM'; // Determine AM/PM
-
-    hours = hours % 12; // Convert 24-hour format to 12-hour format
-    hours = hours ? hours : 12; // If hour is 0, set to 12
-    minutes = minutes < 10 ? '0' + minutes : minutes; // Add leading zero to minutes
-
-    return `${hours}:${minutes} ${ampm}`;
-  };
   const toggleMenu = () => {
     if (isMenuVisible) {
       closeMenu();
@@ -204,6 +195,66 @@ const MapScreen = ({ route }) => {
 
   const decrementAmount = () => {
     setAmountPerSeat((prev) => (prev > 10 ? prev - 10 : 10));
+  };
+
+  const handleConfirmDetails = async () => {
+    try {
+      const storedUserId = await AsyncStorage.getItem("userId");
+
+      if (!storedUserId) {
+        throw new Error("User ID not found. Please log in again.");
+      }
+
+      const dataToSend = {
+        userId: storedUserId, // Keep as is, assuming it's a valid string
+        from: JSON.stringify(currentLocation), // Assuming currentLocation contains latitude and longitude
+        to: JSON.stringify(route.params.destination), // Assuming destination is a string containing latitude and longitude
+        available_seat: seatsAvailable,
+        amount_per_seat: amountPerSeat,
+        shuttle: commuteRegularly,
+        dateDetails: commuteRegularly
+          ? {
+              // For shuttle rides
+              start_date: new Date(date).toISOString(), // Start date in ISO format
+              end_date: new Date(
+                new Date(date).setDate(new Date(date).getDate() + 6)
+              ).toISOString(), // End date in ISO format
+              time: formatTime(time), // Ensure time is in "hh:mm AM/PM" format
+            }
+          : {
+              // For non-shuttle rides
+              date: new Date().toISOString(), // Set current date in ISO format
+              time: formatTime(time), // Ensure time is in "hh:mm AM/PM" format
+            },
+      };
+
+      // Sending the data to the backend
+      const response = await axios.post(
+        "http://192.168.1.5:3000/create-ride",
+        dataToSend
+      );
+      console.log("Data sent successfully:", response.data);
+      setYesPopupVisible(false); // Close the popup after sending data
+      navigation.navigate("RideSuccessful");
+    } catch (error) {
+      console.error(
+        "Error sending data:",
+        error.response ? error.response.data : error.message
+      );
+      setError("Error sending data to API");
+    }
+  };
+
+  // Helper function to format time to "hh:mm AM/PM"
+  const formatTime = (time) => {
+    const date = new Date(time);
+    let hours = date.getHours();
+    const minutes = date.getMinutes();
+    const ampm = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12;
+    hours = hours ? hours : 12; // the hour '0' should be '12'
+    const strMinutes = minutes < 10 ? "0" + minutes : minutes;
+    return hours + ":" + strMinutes + " " + ampm;
   };
 
   if (loading) {
@@ -421,7 +472,7 @@ const MapScreen = ({ route }) => {
           </View>
 
           <View style={styles.confirmButtonContainer}>
-            <TouchableOpacity onPress={() => setYesPopupVisible(true)}>
+            <TouchableOpacity onPress={handleConfirmDetails}>
               <Text style={styles.confirmButtonText}>Confirm Details</Text>
             </TouchableOpacity>
           </View>
@@ -432,147 +483,76 @@ const MapScreen = ({ route }) => {
           />
         </View>
       </View>
+
       <Modal
-      visible={isYesPopupVisible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={() => setYesPopupVisible(false)}
-    >
-      <View style={styles.popupContainer}>
-        <View style={styles.popup}>
-          <Text style={styles.popupMessage}>
-            Make your ride a <Text style={styles.popupTitle}>shuttle </Text>
-            and confirm your <Text style={styles.popupTitle}>earnings </Text>
-            daily, without the hustle to create a new ride tomorrow,
-            day-after-tom, & so on...
-          </Text>
-
-          {/* Week Selection */}
-          <View style={styles.dropdownContainer}>
-            <Text style={styles.selectLabel}>Select Week</Text>
-            <TouchableOpacity onPress={() => setShowDatePicker(true)}>
-              <Text style={styles.selectedWeekText}>
-                {selectedWeek || "Select a date to choose the week"}
-              </Text>
-            </TouchableOpacity>
-            {showDatePicker && (
-              <DateTimePicker
-                value={date}
-                mode="date"
-                display="default"
-                onChange={(event, selectedDate) => {
-                  if (event.type === 'set' && selectedDate) {
-                    const startOfWeek = new Date(selectedDate);
-                    const endOfWeek = new Date(startOfWeek);
-                    endOfWeek.setDate(endOfWeek.getDate() + 6);
-                    setSelectedWeek(`From ${formatDate(startOfWeek)} to ${formatDate(endOfWeek)}`);
-                    setDate(selectedDate); // Update state to the selected date
-                  }
-                  setShowDatePicker(false); // Close the date picker
-                }}
-              />
-            )}
-          </View>
-
-          {/* Time Selection */}
-          <View style={styles.dropdownContainer}>
-            <Text style={styles.selectLabel}>Select Time</Text>
-            <TouchableOpacity onPress={() => setShowTimePicker(true)}>
-              <Text style={styles.selectedWeekText}>
-                {selectedTime || "Select a time"}
-              </Text>
-            </TouchableOpacity>
-            {showTimePicker && (
-              <DateTimePicker
-                value={time}
-                mode="time"
-                display="default"
-                onChange={(event, selectedTime) => {
-                  if (event.type === 'set' && selectedTime) {
-                    setTime(selectedTime); // Update time state with selected time
-                    setSelectedTime(formatTime(selectedTime)); // Format and set selected time in 12-hour format
-                  }
-                  setShowTimePicker(false); // Close the time picker
-                }}
-              />
-            )}
-          </View>
-
-      <TouchableOpacity
-        style={styles.closeButton}
-        onPress={() => setYesPopupVisible(false)}
+        visible={isYesPopupVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setYesPopupVisible(false)}
       >
-        <Text style={styles.closeButtonText}>Yes! Make It A Shuttle</Text>
-      </TouchableOpacity>
-    </View>
-  </View>
-</Modal>
+        <View style={styles.popupContainer}>
+          <View style={styles.popup}>
+            <Text style={styles.popupMessage}>
+              Make your ride a <Text style={styles.popupTitle}>shuttle </Text>
+              and confirm your <Text style={styles.popupTitle}>earnings </Text>
+              daily, without the hustle to create a new ride tomorrow,
+              day-after-tom, & so on...
+            </Text>
 
-<Modal
-  visible={isYesPopupVisible}
-  animationType="slide"
-  transparent={true}
-  onRequestClose={() => setYesPopupVisible(false)}
->
-  <View style={styles.popupContainer}>
-    <View style={styles.popup}>
-      <Text style={styles.popupMessage}>
-        Make your ride a <Text style={styles.popupTitle}>shuttle </Text>
-        and confirm your <Text style={styles.popupTitle}>earnings </Text>
-        daily, without the hustle to create a new ride tomorrow,
-        day-after-tom, & so on...
-      </Text>
+            {/* Week Selection */}
+            <View style={styles.dropdownContainer}>
+              <Text style={styles.selectLabel}>Select Week</Text>
+              <TouchableOpacity onPress={() => setShowDatePicker(true)}>
+                <Text style={styles.selectedWeekText}>
+                  {selectedWeek || "Select a date to choose the week"}
+                </Text>
+              </TouchableOpacity>
+              {showDatePicker && (
+                <DateTimePicker
+                  value={date}
+                  mode="date"
+                  display="default"
+                  onChange={(event, selectedDate) => {
+                    if (event.type === "set" && selectedDate) {
+                      const startOfWeek = new Date(selectedDate);
+                      const endOfWeek = new Date(startOfWeek);
+                      endOfWeek.setDate(endOfWeek.getDate() + 6);
+                      setSelectedWeek(
+                        `From ${formatDate(startOfWeek)} to ${formatDate(
+                          endOfWeek
+                        )}`
+                      );
+                      setDate(selectedDate); // Update state to the selected date
+                    }
+                    setShowDatePicker(false); // Close the date picker
+                  }}
+                />
+              )}
+            </View>
 
-      {/* Week Selection */}
-      <View style={styles.dropdownContainer}>
-        <Text style={styles.selectLabel}>Select Week</Text>
-        <TouchableOpacity onPress={() => setShowDatePicker(true)}>
-          <Text style={styles.selectedWeekText}>
-            {selectedWeek || "Select a date to choose the week"}
-          </Text>
-        </TouchableOpacity>
-        {showDatePicker && (
-          <DateTimePicker
-            value={date}
-            mode="date"
-            display="default"
-            onChange={(event, selectedDate) => {
-              if (event.type === 'set' && selectedDate) {
-                const startOfWeek = new Date(selectedDate);
-                const endOfWeek = new Date(startOfWeek);
-                endOfWeek.setDate(endOfWeek.getDate() + 6);
-                setSelectedWeek(`From ${formatDate(startOfWeek)} to ${formatDate(endOfWeek)}`);
-                setDate(selectedDate); // Update state to the selected date
-              }
-              setShowDatePicker(false); // Close the date picker
-            }}
-          />
-        )}
-      </View>
-
-      {/* Time Selection */}
-      <View style={styles.dropdownContainer}>
-        <Text style={styles.selectLabel}>Select Time</Text>
-        <TouchableOpacity onPress={() => setShowTimePicker(true)}>
-          <Text style={styles.selectedWeekText}>
-            {selectedTime || "Select a time"}
-          </Text>
-        </TouchableOpacity>
-        {showTimePicker && (
-          <DateTimePicker
-            value={time}
-            mode="time"
-            display="default"
-            onChange={(event, selectedTime) => {
-              if (event.type === 'set' && selectedTime) {
-                setTime(selectedTime); // Update time state with selected time
-                setSelectedTime(formatTime(selectedTime)); // Format and set selected time
-              }
-              setShowTimePicker(false); // Close the time picker
-            }}
-          />
-        )}
-      </View>
+            {/* Time Selection */}
+            <View style={styles.dropdownContainer}>
+              <Text style={styles.selectLabel}>Select Time</Text>
+              <TouchableOpacity onPress={() => setShowTimePicker(true)}>
+                <Text style={styles.selectedWeekText}>
+                  {selectedTime || "Select a time"}
+                </Text>
+              </TouchableOpacity>
+              {showTimePicker && (
+                <DateTimePicker
+                  value={time}
+                  mode="time"
+                  display="default"
+                  onChange={(event, selectedTime) => {
+                    if (event.type === "set" && selectedTime) {
+                      setTime(selectedTime); // Update time state with selected time
+                      setSelectedTime(formatTime(selectedTime)); // Format and set selected time
+                    }
+                    setShowTimePicker(false); // Close the time picker
+                  }}
+                />
+              )}
+            </View>
 
             <View style={styles.detailsRow}>
               <Text style={styles.detailsLabel1}>
@@ -934,4 +914,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default MapScreen;
+export default MapScreen;

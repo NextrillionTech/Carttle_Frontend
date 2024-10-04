@@ -44,10 +44,18 @@ const HomeScreen = ({ navigation }) => {
   const [isMenuVisible, setMenuVisible] = useState(false);
   const [placeName, setPlaceName] = useState("Fetching current location...");
   const [dropdownPosition, setDropdownPosition] = useState(null);
+  const [destinationCoordinates, setDestinationCoordinates] = useState(null);
   const slideAnim = useRef(new Animated.Value(-300)).current; // Start off-screen
+  const [stateName, setStateName] = useState(""); // Use state instead of a simple variable
+
+  const formatStateName = (contextArray) => {
+    const stateInfo = contextArray.find((context) =>
+      context.id.includes("region")
+    );
+    return stateInfo ? stateInfo.text.replace(/\s+/g, "-") : "unknown-state";
+  };
 
   const openNotifications = () => {
-    // Navigate to the Notifications screen
     navigation.navigate("NotificationScreen");
   };
 
@@ -119,8 +127,23 @@ const HomeScreen = ({ navigation }) => {
       const response = await axios.get(
         `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${MAPBOX_ACCESS_TOKEN}`
       );
-      const place = response.data.features[0]?.place_name || "Unknown location";
-      setPlaceName(place);
+
+      const features = response.data.features;
+
+      if (features.length > 0) {
+        const place = features[0];
+        const placeName = place.place_name || "Unknown location";
+        const stateContext = place.context.find((context) =>
+          context.id.includes("region")
+        );
+        const newStateName = stateContext
+          ? stateContext.text.replace(/\s+/g, "-").toLowerCase()
+          : "unknown-state";
+        setStateName(newStateName); // Set the state name
+        console.log("State Name:", newStateName); // Log the state name for debugging
+      } else {
+        setPlaceName("Unknown location");
+      }
     } catch (error) {
       console.error("Error reverse geocoding location:", error);
       setPlaceName("Unknown location");
@@ -183,20 +206,66 @@ const HomeScreen = ({ navigation }) => {
     </TouchableOpacity>
   );
 
-  const selectSuggestion = (suggestion) => {
+  const selectSuggestion = async (suggestion) => {
+    const destinationCoordinates = {
+      latitude: suggestion.geometry.coordinates[1],
+      longitude: suggestion.geometry.coordinates[0],
+    };
+
+    setDestinationCoordinates(destinationCoordinates);
     setSearchQuery(suggestion.place_name);
     setModalVisible(false);
 
-    navigation.navigate("MapScreen", {
-      destination: {
-        latitude: suggestion.geometry.coordinates[1],
-        longitude: suggestion.geometry.coordinates[0],
-        placeName: suggestion.place_name,
-      },
-      userLocation,
-    });
-  };
+    const data = {
+      origin: `${userLocation.latitude},${userLocation.longitude}`,
+      destination: `${destinationCoordinates.latitude},${destinationCoordinates.longitude}`,
+      state: stateName, // Ensure this is set correctly
+    };
 
+    // Console logs to check the values being sent
+    console.log("Origin:", data.origin);
+    console.log("Destination:", data.destination);
+    console.log("State Name:", stateName);
+
+    try {
+      // Call the distance matrix API
+      const response = await axios.post(
+        "http://192.168.1.5:3000/distanceMatrix",
+        data
+      );
+      console.log("Distance:", response.data.distance);
+
+      // Call the cost calculator API
+      const costResponse = await axios.post(
+        "http://192.168.1.5:3000/calculate-cost",
+        {
+          state: stateName,
+          origin: `${userLocation.latitude},${userLocation.longitude}`,
+          destination: `${destinationCoordinates.latitude},${destinationCoordinates.longitude}`,
+        }
+      );
+
+      console.log("Fuel Price:", costResponse.data.fuelPrice);
+      console.log("Total Distance:", costResponse.data.distance);
+      console.log("Total Cost:", costResponse.data.totalCost);
+
+      navigation.navigate("MapScreen", {
+        destination: destinationCoordinates,
+        userLocation,
+        distance: response.data.distance,
+        totalCost: costResponse.data.totalCost,
+      });
+    } catch (error) {
+      console.error(
+        "Error sending data to backend:",
+        error.response ? error.response.data : error.message
+      );
+      Alert.alert(
+        "Error",
+        "Could not calculate distance and cost, please try again."
+      );
+    }
+  };
   if (errorMsg) {
     return (
       <View style={styles.errorContainer}>
@@ -242,7 +311,7 @@ const HomeScreen = ({ navigation }) => {
                 style={styles.profileImage}
               />
               <Text style={styles.userName}>Naina Kapoor</Text>
-              <Text style={styles.userEmail}>naina****@gmail.com</Text>
+              <Text style={styles.userEmail}>naina**@gmail.com</Text>
               <View style={styles.menuOptions}>
                 <TouchableOpacity>
                   <Text style={styles.menuOptionText}>Profile</Text>
@@ -341,7 +410,6 @@ const HomeScreen = ({ navigation }) => {
           {renderRadioButton("Tomorrow")}
         </View>
       )}
-
       <Modal visible={modalVisible} animationType="slide" transparent={true}>
         <TouchableWithoutFeedback
           onPress={() => {
@@ -381,7 +449,11 @@ const HomeScreen = ({ navigation }) => {
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={styles.suggestionItem}
-                  onPress={() => selectSuggestion(item)}
+                  onPress={() => {
+                    selectSuggestion(item);
+                    setDestinationCoordinates(item.geometry.coordinates); // Store destination coordinates
+                    setModalVisible(false); // Close modal after selection
+                  }}
                 >
                   <Text style={styles.suggestionText}>{item.place_name}</Text>
                 </TouchableOpacity>

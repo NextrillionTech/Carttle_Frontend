@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,11 +7,19 @@ import {
   Image,
   Dimensions,
 } from "react-native";
+import axios from "axios";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons"; // For the back icon
 import { useFonts } from "expo-font";
 
-const RideSuccessful = () => {
+const RideSuccessful = ({ route }) => {
+  const { rideDetails } = route.params; // Get ride details from route parameters
+  const [currentLocationName, setCurrentLocationName] = useState(""); // State for current location name
+  const [destinationName, setDestinationName] = useState(""); // State for destination name
+
+  console.log("Ride Details:", rideDetails);
+  const rideId = rideDetails.__id;
+
   const navigation = useNavigation();
   const [fontsLoaded] = useFonts({
     "poppins-medium": require("../assets/Poppins-Medium.ttf"),
@@ -21,6 +29,60 @@ const RideSuccessful = () => {
   };
   const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } =
     Dimensions.get("window");
+
+  // Function to convert latitude and longitude to place name
+  const getPlaceName = async (latitude, longitude) => {
+    try {
+      const response = await axios.get(
+        `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+      );
+      // Extract place name from response
+      const address = response.data.address;
+      const placeName =
+        address.name ||
+        address.shop ||
+        address.amenity ||
+        address.poi ||
+        address.road ||
+        address.street ||
+        "Place name not found"; // Use specific commercial attributes if available
+      return placeName; // Return the best available name
+    } catch (error) {
+      console.error("Error fetching place name:", error);
+      return "Error fetching place name"; // Handle error
+    }
+  };
+
+  // Function to format date to DD/MM/YYYY
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0"); // Month is zero-based
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  // Fetch place names when component mounts
+  useEffect(() => {
+    const fetchPlaceNames = async () => {
+      // Get current location name
+      const currentName = await getPlaceName(
+        rideDetails.currentLocation.latitude,
+        rideDetails.currentLocation.longitude
+      );
+      setCurrentLocationName(currentName);
+
+      // Get destination name
+      const destinationName = await getPlaceName(
+        rideDetails.destination.latitude,
+        rideDetails.destination.longitude
+      );
+      setDestinationName(destinationName);
+    };
+
+    fetchPlaceNames();
+  }, [rideDetails]);
+
   return (
     <View style={styles.container}>
       <TouchableOpacity onPress={handleBack} style={styles.backButton}>
@@ -33,35 +95,34 @@ const RideSuccessful = () => {
       </View>
 
       <Text style={styles.successText}>Ride Created Successfully</Text>
-      <Text style={styles.rideId}>01859-489562</Text>
+      <Text style={styles.rideId}>{rideId}</Text>
 
       <View style={styles.detailsContainer}>
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>From</Text>
-          <Text style={styles.detailValue}>Udyog Vihar, Phase 1...</Text>
+          <Text style={styles.detailLabel}>From:</Text>
+          <Text style={styles.detailValue}>{currentLocationName}</Text>
         </View>
-
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>To</Text>
-          <Text style={styles.detailValue}>Ambience Mall, Gur...</Text>
+          <Text style={styles.detailLabel}>To:</Text>
+          <Text style={styles.detailValue}>{destinationName} </Text>
         </View>
 
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Available Seats</Text>
-          <Text style={styles.detailValue}>3</Text>
+          <Text style={styles.detailValue}>{rideDetails.availableSeats}</Text>
         </View>
 
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Amount Per Seat</Text>
-          <Text style={styles.detailValue}>₹100.00</Text>
+          <Text style={styles.detailValue}>{rideDetails.amountPerSeat}</Text>
         </View>
-
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Timestamp</Text>
-          <Text style={styles.detailValue}>01/11/22, 10:45PM</Text>
+          <Text style={styles.detailValue}>
+            {formatDate(rideDetails.date)},{rideDetails.time}
+          </Text>
         </View>
       </View>
-
       <TouchableOpacity
         style={styles.button}
         onPress={() => navigation.navigate("RidesScreen")}

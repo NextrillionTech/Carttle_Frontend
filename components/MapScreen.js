@@ -34,6 +34,8 @@ const MapScreen = ({ route }) => {
 
   const navigation = useNavigation();
 
+  const { totalCost } = route.params;
+
   const slideAnim = useRef(new Animated.Value(-300)).current;
   const [selectedTime, setSelectedTime] = useState("");
   const [dateOptions, setDateOptions] = useState([]);
@@ -51,7 +53,7 @@ const MapScreen = ({ route }) => {
   const [time, setTime] = useState(new Date());
 
   const [seatsAvailable, setSeatsAvailable] = useState(1);
-  const [amountPerSeat, setAmountPerSeat] = useState(100);
+  const [amountPerSeat, setAmountPerSeat] = useState(0);
 
   const closeMenu = () => {
     Animated.timing(slideAnim, {
@@ -196,7 +198,6 @@ const MapScreen = ({ route }) => {
   const decrementAmount = () => {
     setAmountPerSeat((prev) => (prev > 10 ? prev - 10 : 10));
   };
-
   const handleConfirmDetails = async () => {
     try {
       const storedUserId = await AsyncStorage.getItem("userId");
@@ -206,25 +207,23 @@ const MapScreen = ({ route }) => {
       }
 
       const dataToSend = {
-        userId: storedUserId, // Keep as is, assuming it's a valid string
-        from: JSON.stringify(currentLocation), // Assuming currentLocation contains latitude and longitude
-        to: JSON.stringify(route.params.destination), // Assuming destination is a string containing latitude and longitude
+        userId: storedUserId,
+        from: JSON.stringify(currentLocation),
+        to: JSON.stringify(route.params.destination),
         available_seat: seatsAvailable,
         amount_per_seat: amountPerSeat,
         shuttle: commuteRegularly,
         dateDetails: commuteRegularly
           ? {
-              // For shuttle rides
-              start_date: new Date(date).toISOString(), // Start date in ISO format
+              start_date: new Date(date).toISOString(),
               end_date: new Date(
                 new Date(date).setDate(new Date(date).getDate() + 6)
-              ).toISOString(), // End date in ISO format
-              time: formatTime(time), // Ensure time is in "hh:mm AM/PM" format
+              ).toISOString(),
+              time: formatTime(time),
             }
           : {
-              // For non-shuttle rides
-              date: new Date().toISOString(), // Set current date in ISO format
-              time: formatTime(time), // Ensure time is in "hh:mm AM/PM" format
+              date: new Date().toISOString(),
+              time: formatTime(time),
             },
       };
 
@@ -234,8 +233,20 @@ const MapScreen = ({ route }) => {
         dataToSend
       );
       console.log("Data sent successfully:", response.data);
+
+      // Prepare data to pass to the RideSuccessful screen
+      const rideDetails = {
+        __id: response.data.ride._id, // Access the _id from the ride object
+        destination: route.params.destination,
+        currentLocation: currentLocation,
+        availableSeats: seatsAvailable,
+        amountPerSeat: amountPerSeat,
+        date: new Date(date).toISOString(),
+        time: formatTime(time),
+      };
+
       setYesPopupVisible(false); // Close the popup after sending data
-      navigation.navigate("RideSuccessful");
+      navigation.navigate("RideSuccessful", { rideDetails }); // Pass data to the next screen
     } catch (error) {
       console.error(
         "Error sending data:",
@@ -431,6 +442,7 @@ const MapScreen = ({ route }) => {
               <TouchableOpacity
                 onPress={incrementAmount}
                 style={styles.seatButton}
+                disabled={amountPerSeat >= totalCost}
               >
                 <Text style={styles.seatButtonText}>+</Text>
               </TouchableOpacity>

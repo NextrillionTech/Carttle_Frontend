@@ -60,7 +60,7 @@ const DriverSignup = () => {
     }
 
     try {
-      const response = await fetch("http://192.168.1.5:3000/auth/api/signup", {
+      const response = await fetch("http://10.11.52.77:3000/auth/api/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

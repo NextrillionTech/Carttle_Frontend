@@ -94,6 +94,26 @@ const MapScreen = ({ route }) => {
   }, [destination]);
 
   useEffect(() => {
+    if (commuteRegularly) {
+      const today = new Date();
+      const options = [];
+
+      for (let i = 0; i < 7; i++) {
+        const startDate = new Date();
+        startDate.setDate(today.getDate() + i);
+        const endDate = new Date();
+        endDate.setDate(startDate.getDate() + 7);
+
+        const formattedStart = formatDate(startDate);
+        const formattedEnd = formatDate(endDate);
+
+        options.push(`${formattedStart} - ${formattedEnd}`);
+      }
+      setDateOptions(options);
+    }
+  }, [commuteRegularly]);
+
+  useEffect(() => {
     const generateTimeOptions = () => {
       const options = [];
       const currentTime = new Date();
@@ -114,8 +134,8 @@ const MapScreen = ({ route }) => {
   }, []);
 
   const formatDate = (date) => {
-    const day = date.getDate();
-    const month = date.getMonth() + 1;
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
     const year = date.getFullYear();
     return `${day}/${month}/${year}`;
   };
@@ -330,7 +350,7 @@ const MapScreen = ({ route }) => {
                 style={styles.profileImage}
               />
               <Text style={styles.userName}>Naina Kapoor</Text>
-              <Text style={styles.userEmail}>naina**@gmail.com</Text>
+              <Text style={styles.userEmail}>naina****@gmail.com</Text>
               <View style={styles.menuOptions}>
                 <TouchableOpacity>
                   <Text style={styles.menuOptionText}>Profile</Text>

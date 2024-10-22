@@ -13,12 +13,14 @@ const BottomNav = ({ activeTab, onTabPress, disableActiveColor }) => {
           ]}
         />
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => onTabPress("Rides")}>
+      <TouchableOpacity onPress={() => onTabPress("RidesScreen")}>
         <Image
           source={require("../assets/RIDES.png")}
           style={[
             styles.icon,
-            !disableActiveColor && activeTab === "rides" && styles.activeIcon,
+            !disableActiveColor &&
+              activeTab === "RidesScreen" &&
+              styles.activeIcon,
           ]}
         />
       </TouchableOpacity>

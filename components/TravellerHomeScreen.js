@@ -14,7 +14,6 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from "react-native";
-
 import MapView, { Marker, UrlTile } from "react-native-maps";
 import * as Location from "expo-location";
 import axios from "axios";
@@ -31,7 +30,7 @@ const MAPBOX_ACCESS_TOKEN =
   "sk.eyJ1IjoibmV4dHJpbGxpb24tdGVjaCIsImEiOiJjbHpnaHdiaTkxb29xMmpxc3V5bTRxNWNkIn0.l4AsMHEMhAEO90klTb3oCQ";
 const MAPBOX_TILE_URL = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/256/{z}/{x}/{y}@2x?access_token=${MAPBOX_ACCESS_TOKEN}`;
 
-const HomeScreen = ({ navigation }) => {
+const TravellerHomeScreen = ({ navigation }) => {
   const [region, setRegion] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
@@ -231,14 +230,14 @@ const HomeScreen = ({ navigation }) => {
     try {
       // Call the distance matrix API
       const response = await axios.post(
-        "http://192.168.29.99:3000/distanceMatrix",
+        "http://192.168.1.3:3000/distanceMatrix",
         data
       );
       console.log("Distance:", response.data.distance);
 
       // Call the cost calculator API
       const costResponse = await axios.post(
-        "http://192.168.29.99:3000/calculate-cost",
+        "http://192.168.1.3:3000/calculate-cost",
         {
           state: stateName,
           origin: `${userLocation.latitude},${userLocation.longitude}`,
@@ -312,11 +311,9 @@ const HomeScreen = ({ navigation }) => {
                 style={styles.profileImage}
               />
               <Text style={styles.userName}>Naina Kapoor</Text>
-              <Text style={styles.userEmail}>naina****@gmail.com</Text>
+              <Text style={styles.userEmail}>naina**@gmail.com</Text>
               <View style={styles.menuOptions}>
-                <TouchableOpacity
-                  onPress={() => navigation.navigate("Profile")}
-                >
+                <TouchableOpacity>
                   <Text style={styles.menuOptionText}>Profile</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
@@ -328,9 +325,7 @@ const HomeScreen = ({ navigation }) => {
                   <Text style={styles.menuOptionText}>About</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => navigation.navigate("HelpScreen")}
-                >
+                <TouchableOpacity>
                   <Text style={styles.menuOptionText}>Help</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
@@ -927,4 +922,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default HomeScreen;
+export default TravellerHomeScreen;

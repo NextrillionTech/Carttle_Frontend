@@ -31,7 +31,10 @@ const MapScreen = ({ route }) => {
   const [isMenuVisible, setMenuVisible] = useState(false);
   const [isYesPopupVisible, setYesPopupVisible] = useState(false);
   const [selectedDateRange, setSelectedDateRange] = useState("");
-
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(new Date());
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const navigation = useNavigation();
 
   const { totalCost } = route.params;
@@ -198,6 +201,7 @@ const MapScreen = ({ route }) => {
   const decrementAmount = () => {
     setAmountPerSeat((prev) => (prev > 10 ? prev - 10 : 10));
   };
+
   const handleConfirmDetails = async () => {
     try {
       const storedUserId = await AsyncStorage.getItem("userId");
@@ -213,40 +217,102 @@ const MapScreen = ({ route }) => {
         available_seat: seatsAvailable,
         amount_per_seat: amountPerSeat,
         shuttle: commuteRegularly,
-        dateDetails: commuteRegularly
-          ? {
-              start_date: new Date(date).toISOString(),
-              end_date: new Date(
-                new Date(date).setDate(new Date(date).getDate() + 6)
-              ).toISOString(),
-              time: formatTime(time),
-            }
-          : {
+      };
+
+      if (commuteRegularly) {
+        let currentDate = new Date(startDate);
+        const endDateAdjusted = new Date(endDate);
+        endDateAdjusted.setDate(endDateAdjusted.getDate() + 1); // Include the end date
+
+        while (currentDate < endDateAdjusted) {
+          const dateDetails = {
+            date: currentDate.toISOString(),
+            time: formatTime(time), // Use the selected time for each day
+          };
+
+          const dataForDay = {
+            ...dataToSend,
+            dateDetails,
+          };
+
+          console.log(
+            "Sending data for regular commute on:",
+            currentDate.toISOString(),
+            dataForDay
+          );
+
+          // Sending the data to the backend for each day
+          const response = await axios.post(
+            "http://192.168.29.99:3000/create-ride",
+            dataForDay
+          );
+
+          console.log(
+            "Full response for date",
+            currentDate.toISOString(),
+            response.data
+          );
+
+          // Check for the rides array in the response
+          if (!response.data.rides || response.data.rides.length === 0) {
+            console.warn(
+              "No rides returned for date:",
+              currentDate.toISOString()
+            );
+            console.log("API Message:", response.data.message);
+            // You may choose to handle this case differently based on your app's logic.
+            // For now, we can continue to the next date.
+          } else {
+            response.data.rides.forEach((ride) => {
+              if (!ride._id) {
+                throw new Error("Ride ID not found in the response.");
+              }
+              console.log(
+                `Ride created with ID: ${
+                  ride._id
+                } for date: ${currentDate.toISOString()}`
+              );
+            });
+          }
+
+          // Move to the next day
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        setYesPopupVisible(false); // Close the popup after sending all data
+        navigation.navigate("RideSuccessful", { rideDetails: dataToSend });
+      } else {
+        // For one-time ride, just send the normal data
+        const response = await axios.post(
+          "http://192.168.29.99:3000/create-ride",
+          {
+            ...dataToSend,
+            dateDetails: {
               date: new Date().toISOString(),
               time: formatTime(time),
             },
-      };
+          }
+        );
 
-      // Sending the data to the backend
-      const response = await axios.post(
-        "http://192.168.1.5:3000/create-ride",
-        dataToSend
-      );
-      console.log("Data sent successfully:", response.data);
+        console.log("Full response for one-time ride:", response.data);
 
-      // Prepare data to pass to the RideSuccessful screen
-      const rideDetails = {
-        __id: response.data.ride._id, // Access the _id from the ride object
-        destination: route.params.destination,
-        currentLocation: currentLocation,
-        availableSeats: seatsAvailable,
-        amountPerSeat: amountPerSeat,
-        date: new Date(date).toISOString(),
-        time: formatTime(time),
-      };
+        if (!response.data.ride || !response.data.ride._id) {
+          throw new Error("Ride ID not found in the response.");
+        }
 
-      setYesPopupVisible(false); // Close the popup after sending data
-      navigation.navigate("RideSuccessful", { rideDetails }); // Pass data to the next screen
+        const rideDetails = {
+          __id: response.data.ride._id,
+          destination: route.params.destination,
+          currentLocation: currentLocation,
+          availableSeats: seatsAvailable,
+          amountPerSeat: amountPerSeat,
+          date: new Date().toISOString(),
+          time: formatTime(time),
+        };
+
+        setYesPopupVisible(false);
+        navigation.navigate("RideSuccessful", { rideDetails });
+      }
     } catch (error) {
       console.error(
         "Error sending data:",
@@ -255,7 +321,6 @@ const MapScreen = ({ route }) => {
       setError("Error sending data to API");
     }
   };
-
   // Helper function to format time to "hh:mm AM/PM"
   const formatTime = (time) => {
     const date = new Date(time);
@@ -343,7 +408,9 @@ const MapScreen = ({ route }) => {
               <Text style={styles.userName}>Naina Kapoor</Text>
               <Text style={styles.userEmail}>naina**@gmail.com</Text>
               <View style={styles.menuOptions}>
-                <TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate("Profile")}
+                >
                   <Text style={styles.menuOptionText}>Profile</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
@@ -355,7 +422,9 @@ const MapScreen = ({ route }) => {
                   <Text style={styles.menuOptionText}>About</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
-                <TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate("HelpScreen")}
+                >
                   <Text style={styles.menuOptionText}>Help</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
@@ -511,39 +580,50 @@ const MapScreen = ({ route }) => {
               day-after-tom, & so on...
             </Text>
 
-            {/* Week Selection */}
+            {/* Date Range Selection */}
             <View style={styles.dropdownContainer}>
-              <Text style={styles.selectLabel}>Select Week</Text>
-              <TouchableOpacity onPress={() => setShowDatePicker(true)}>
+              <Text style={styles.selectLabel}>Start Date</Text>
+              <TouchableOpacity onPress={() => setShowStartDatePicker(true)}>
                 <Text style={styles.selectedWeekText}>
-                  {selectedWeek || "Select a date to choose the week"}
+                  {`${formatDate(startDate)}`}
+                  {"\n"}
                 </Text>
               </TouchableOpacity>
-              {showDatePicker && (
+              {showStartDatePicker && (
                 <DateTimePicker
-                  value={date}
+                  value={startDate}
                   mode="date"
                   display="default"
                   onChange={(event, selectedDate) => {
                     if (event.type === "set" && selectedDate) {
-                      const startOfWeek = new Date(selectedDate);
-                      const endOfWeek = new Date(startOfWeek);
-                      endOfWeek.setDate(endOfWeek.getDate() + 6);
-                      setSelectedWeek(
-                        `From ${formatDate(startOfWeek)} to ${formatDate(
-                          endOfWeek
-                        )}`
-                      );
-                      setDate(selectedDate); // Update state to the selected date
+                      setStartDate(selectedDate);
                     }
-                    setShowDatePicker(false); // Close the date picker
+                    setShowStartDatePicker(false);
                   }}
                 />
               )}
-            </View>
 
-            {/* Time Selection */}
-            <View style={styles.dropdownContainer}>
+              <Text style={styles.selectLabel}>End Date</Text>
+              <TouchableOpacity onPress={() => setShowEndDatePicker(true)}>
+                <Text style={styles.selectedWeekText}>
+                  {`${formatDate(endDate)}`}
+                  {"\n"}
+                </Text>
+              </TouchableOpacity>
+              {showEndDatePicker && (
+                <DateTimePicker
+                  value={endDate}
+                  mode="date"
+                  display="default"
+                  onChange={(event, selectedDate) => {
+                    if (event.type === "set" && selectedDate) {
+                      setEndDate(selectedDate);
+                    }
+                    setShowEndDatePicker(false);
+                  }}
+                />
+              )}
+
               <Text style={styles.selectLabel}>Select Time</Text>
               <TouchableOpacity onPress={() => setShowTimePicker(true)}>
                 <Text style={styles.selectedWeekText}>
@@ -565,7 +645,6 @@ const MapScreen = ({ route }) => {
                 />
               )}
             </View>
-
             <View style={styles.detailsRow}>
               <Text style={styles.detailsLabel1}>
                 Do you commute to this destination regularly?

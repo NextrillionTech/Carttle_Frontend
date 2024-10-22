@@ -17,8 +17,14 @@ import MessageScreen from "./components/MessageScreen";
 import MapScreen from "./components/MapScreen";
 import NotificationScreen from "./components/NotificationScreen";
 import RidesScreen from "./components/NotificationScreen";
-
 import RideSuccessful from "./components/RideSuccessful";
+import Profile from "./components/Profile";
+import HelpScreen from "./components/HelpScreen";
+import ChangePasswordScreen from "./components/ChangePasswordScreen";
+import ContactUsScreen from "./components/ContactUsScreen";
+import TravellerSignup from "./components/TravellerSignup";
+import TravellerLogin from "./components/TravellerLogin";
+import TravellerHomeScreen from "./components/TravellerHomeScreen";
 
 const Stack = createStackNavigator();
 
@@ -77,13 +83,28 @@ function App() {
           options={{ headerShown: false }}
         />
         <Stack.Screen
-          name="MapScreen"
-          component={MapScreen}
+          name="Profile"
+          component={Profile}
           options={{ headerShown: false }}
         />
         <Stack.Screen
-          name="RideSuccessful"
-          component={RideSuccessful}
+          name="HelpScreen"
+          component={HelpScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ChangePasswordScreen"
+          component={ChangePasswordScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ContactUsScreen"
+          component={ContactUsScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="MapScreen"
+          component={MapScreen}
           options={{ headerShown: false }}
         />
         <Stack.Screen
@@ -99,6 +120,27 @@ function App() {
         <Stack.Screen
           name="RidesScreen"
           component={RidesScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="RideSuccessful"
+          component={RideSuccessful}
+          options={{ headerShown: false }}
+        />
+
+        <Stack.Screen
+          name="TravellerLogin"
+          component={TravellerLogin}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="TravellerSignup"
+          component={TravellerSignup}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="TravellerHomeScreen"
+          component={TravellerHomeScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

@@ -29,7 +29,7 @@ const MessageScreen = () => {
     if (tab === "home") {
       navigation.navigate("HomeScreen", { activeTab: tab });
     } else if (tab === "rides") {
-      navigation.navigate("RideScreen", { activeTab: tab });
+      navigation.navigate("RidesScreen", { activeTab: tab });
     } else if (tab === "message") {
       navigation.navigate("MessageScreen", { activeTab: tab });
     }

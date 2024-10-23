@@ -38,16 +38,19 @@ const DriverLogin = () => {
     }
 
     try {
-      const response = await fetch("http://192.168.1.5:3000/auth/api/signin", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          phonenumber: phoneNumber,
-          password: password,
-        }),
-      });
+      const response = await fetch(
+        "http://192.168.29.99:3000/auth/api/signin",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            phonenumber: phoneNumber,
+            password: password,
+          }),
+        }
+      );
 
       const data = await response.json();
 

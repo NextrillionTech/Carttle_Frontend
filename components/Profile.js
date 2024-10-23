@@ -29,6 +29,17 @@ export default function Profile() {
   const [musicTaste, setMusicTaste] = useState("");
   const [drivingStyle, setDrivingStyle] = useState("");
 
+  const handleTabPress = (tab) => {
+    setActiveTab(tab);
+    if (tab === "home") {
+      navigation.navigate("HomeScreen");
+    } else if (tab === "rides") {
+      navigation.navigate("RidesScreen");
+    } else if (tab === "message") {
+      navigation.navigate("MessageScreen");
+    }
+  };
+
   const profileData = {
     name: "",
     mobile: "",
@@ -50,11 +61,6 @@ export default function Profile() {
     }
   };
   const navigation = useNavigation();
-
-  const handleTabPress = (tab) => {
-    setActiveTab(tab);
-    // Navigation logic...
-  };
 
   const toggleMenu = () => {
     if (isMenuVisible) {
@@ -247,11 +253,6 @@ export default function Profile() {
         </View>
       </ScrollView>
 
-      <BottomNav
-        activeTab={activeTab}
-        onTabPress={handleTabPress}
-        style={styles.bottomNav}
-      />
       {isMenuVisible && (
         <TouchableWithoutFeedback onPress={closeMenu}>
           <Animated.View
@@ -299,6 +300,11 @@ export default function Profile() {
           </Animated.View>
         </TouchableWithoutFeedback>
       )}
+      <BottomNav
+        activeTab={activeTab}
+        onTabPress={handleTabPress}
+        style={styles.bottomNav}
+      />
     </View>
   );
 }
@@ -310,21 +316,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#F5F5F5",
     width: "100%",
+    height: "80%",
   },
   bottomNav: {
-    width: "100%",
-    backgroundColor: "white",
     position: "absolute",
     bottom: 0,
-    borderTopWidth: 1,
-    borderTopColor: "#ccc",
-    paddingStart: 0,
-    paddingHorizontal: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "white",
+    height: "100%",
   },
   bottomContainer: {
     padding: 16,
     width: "100%",
-    flex: 1,
     backgroundColor: "#F5F5F5",
     borderTopColor: "#ccc",
     borderTopWidth: 1,

@@ -13,7 +13,7 @@ const BottomNav = ({ activeTab, onTabPress, disableActiveColor }) => {
           ]}
         />
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => onTabPress("RidesScreen")}>
+      <TouchableOpacity onPress={() => onTabPress("rides")}>
         <Image
           source={require("../assets/RIDES.png")}
           style={[
@@ -49,6 +49,10 @@ const styles = StyleSheet.create({
     borderTopColor: "#ddd",
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    width: "100%",
   },
   icon: {
     width: 40,

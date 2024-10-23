@@ -14,7 +14,7 @@ const NotificationScreen = ({ navigation }) => {
     if (tab === "home") {
       navigation.navigate("HomeScreen");
     } else if (tab === "rides") {
-      navigation.navigate("RideScreen");
+      navigation.navigate("RidesScreen");
     } else if (tab === "message") {
       navigation.navigate("MessageScreen");
     }

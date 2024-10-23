@@ -16,7 +16,7 @@ import HomeScreen from "./components/HomeScreen";
 import MessageScreen from "./components/MessageScreen";
 import MapScreen from "./components/MapScreen";
 import NotificationScreen from "./components/NotificationScreen";
-import RidesScreen from "./components/NotificationScreen";
+import RidesScreen from "./components/RidesScreen";
 import RideSuccessful from "./components/RideSuccessful";
 import Profile from "./components/Profile";
 import HelpScreen from "./components/HelpScreen";

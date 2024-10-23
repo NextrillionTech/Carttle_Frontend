@@ -4,6 +4,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableWithoutFeedback,
+  Linking,
   Animated,
   Text,
   Image,
@@ -418,7 +419,13 @@ const MapScreen = ({ route }) => {
                   <Text style={styles.menuOptionText}>Trip History</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
-                <TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() =>
+                    Linking.openURL(
+                      "https://nextrilliontech.infinityfreeapp.com"
+                    )
+                  }
+                >
                   <Text style={styles.menuOptionText}>About</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>

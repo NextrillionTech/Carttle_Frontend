@@ -13,7 +13,6 @@ import {
   TouchableOpacity,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage"; // Import AsyncStorage
-
 import { useNavigation } from "@react-navigation/native";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import * as Location from "expo-location";
@@ -163,6 +162,7 @@ const MapScreen = ({ route }) => {
       setLoading(false);
     }
   };
+
   const handleTabPress = (tab) => {
     setActiveTab(tab);
     if (tab === "home") {
@@ -175,13 +175,12 @@ const MapScreen = ({ route }) => {
   };
 
   const handleToggle = () => {
-    // Prevent multiple state updates within the same render cycle
     setCommuteRegularly((prevValue) => {
-      const newValue = !prevValue; // Toggle the value
+      const newValue = !prevValue;
       if (newValue) {
-        setYesPopupVisible(true); // Show popup only when toggling to 'Yes'
+        setYesPopupVisible(true);
       }
-      return newValue; // Return the new state value
+      return newValue;
     });
   };
 
@@ -211,109 +210,55 @@ const MapScreen = ({ route }) => {
         throw new Error("User ID not found. Please log in again.");
       }
 
-      const dataToSend = {
-        userId: storedUserId,
-        from: JSON.stringify(currentLocation),
-        to: JSON.stringify(route.params.destination),
-        available_seat: seatsAvailable,
-        amount_per_seat: amountPerSeat,
-        shuttle: commuteRegularly,
+      // Prepare GeoJSON format
+      const fromCoordinates = {
+        type: "Point",
+        coordinates: [currentLocation.longitude, currentLocation.latitude], // [longitude, latitude]
+      };
+      const toCoordinates = {
+        type: "Point",
+        coordinates: [destination.longitude, destination.latitude], // [longitude, latitude]
       };
 
-      if (commuteRegularly) {
-        let currentDate = new Date(startDate);
-        const endDateAdjusted = new Date(endDate);
-        endDateAdjusted.setDate(endDateAdjusted.getDate() + 1); // Include the end date
-
-        while (currentDate < endDateAdjusted) {
-          const dateDetails = {
-            date: currentDate.toISOString(),
-            time: formatTime(time), // Use the selected time for each day
-          };
-
-          const dataForDay = {
-            ...dataToSend,
-            dateDetails,
-          };
-
-          console.log(
-            "Sending data for regular commute on:",
-            currentDate.toISOString(),
-            dataForDay
-          );
-
-          // Sending the data to the backend for each day
-          const response = await axios.post(
-            "http://192.168.29.99:3000/create-ride",
-            dataForDay
-          );
-
-          console.log(
-            "Full response for date",
-            currentDate.toISOString(),
-            response.data
-          );
-
-          // Check for the rides array in the response
-          if (!response.data.rides || response.data.rides.length === 0) {
-            console.warn(
-              "No rides returned for date:",
-              currentDate.toISOString()
-            );
-            console.log("API Message:", response.data.message);
-            // You may choose to handle this case differently based on your app's logic.
-            // For now, we can continue to the next date.
-          } else {
-            response.data.rides.forEach((ride) => {
-              if (!ride._id) {
-                throw new Error("Ride ID not found in the response.");
-              }
-              console.log(
-                `Ride created with ID: ${
-                  ride._id
-                } for date: ${currentDate.toISOString()}`
-              );
-            });
-          }
-
-          // Move to the next day
-          currentDate.setDate(currentDate.getDate() + 1);
-        }
-
-        setYesPopupVisible(false); // Close the popup after sending all data
-        navigation.navigate("RideSuccessful", { rideDetails: dataToSend });
-      } else {
-        // For one-time ride, just send the normal data
-        const response = await axios.post(
-          "http://192.168.29.99:3000/create-ride",
-          {
-            ...dataToSend,
-            dateDetails: {
-              date: new Date().toISOString(),
-              time: formatTime(time),
-            },
-          }
-        );
-
-        console.log("Full response for one-time ride:", response.data);
-
-        if (!response.data.ride || !response.data.ride._id) {
-          throw new Error("Ride ID not found in the response.");
-        }
-
-        const rideDetails = {
-          __id: response.data.ride._id,
-          destination: route.params.destination,
-          currentLocation: currentLocation,
-          availableSeats: seatsAvailable,
-          amountPerSeat: amountPerSeat,
-          date: new Date().toISOString(),
+      const dataToSend = {
+        userId: storedUserId,
+        from: currentLocation,
+        to: destination,
+        available_seat: seatsAvailable,
+        amount_per_seat: amountPerSeat,
+        shuttle: false, // Set to false for this case
+        dateDetails: {
+          date: new Date().toISOString(), // Ensure this is formatted as ISO string
           time: formatTime(time),
-        };
+        },
+        round_trip: false, // Set to false for this case
+      };
 
-        setYesPopupVisible(false);
-        navigation.navigate("RideSuccessful", { rideDetails });
+      console.log("Data being sent:", JSON.stringify(dataToSend));
+
+      // Sending the data for a one-time ride
+      const response = await axios.post(
+        "http://192.168.29.99:3000/create-ride",
+        dataToSend
+      );
+      console.log("Response for one-time ride:", response.data);
+
+      if (!response.data.ride || !response.data.ride._id) {
+        throw new Error("Ride ID not found in the response.");
       }
+
+      const rideDetails = {
+        __id: response.data.ride._id,
+        destination: destination,
+        currentLocation: currentLocation,
+        availableSeats: seatsAvailable,
+        amountPerSeat: amountPerSeat,
+        date: new Date().toISOString(),
+        time: formatTime(time),
+      };
+
+      setYesPopupVisible(false);
+      navigation.navigate("RideSuccessful", { rideDetails });
     } catch (error) {
       console.error(
         "Error sending data:",
@@ -652,6 +597,8 @@ const MapScreen = ({ route }) => {
                 />
               )}
             </View>
+
+            {/* Toggle for Commute Regularly */}
             <View style={styles.detailsRow}>
               <Text style={styles.detailsLabel1}>
                 Do you commute to this destination regularly?
@@ -671,6 +618,7 @@ const MapScreen = ({ route }) => {
                       </Text>
                     </View>
                   </View>
+
                   <View
                     style={[
                       styles.toggleCircle,
@@ -687,6 +635,41 @@ const MapScreen = ({ route }) => {
                 </View>
               </TouchableOpacity>
             </View>
+
+            {/* Show additional options only if commuteRegularly is true */}
+            {commuteRegularly && (
+              <>
+                <Text style={styles.selectLabel}>Select Date Range</Text>
+
+                {/* Date Range Display when Toggle is Yes */}
+                <View style={styles.dateRangeContainer}>
+                  <Text style={styles.dateRangeText1}>
+                    {`${formatDate(startDate)} - ${formatDate(endDate)}`}
+                  </Text>
+                </View>
+
+                <Text style={styles.selectLabel1}>Select Time</Text>
+                <TouchableOpacity onPress={() => setShowTimePicker(true)}>
+                  <Text style={styles.selectedWeekText1}>
+                    {selectedTime || "Select a time"}
+                  </Text>
+                </TouchableOpacity>
+                {showTimePicker && (
+                  <DateTimePicker
+                    value={time}
+                    mode="time"
+                    display="default"
+                    onChange={(event, selectedTime) => {
+                      if (event.type === "set" && selectedTime) {
+                        setTime(selectedTime); // Update time state with selected time
+                        setSelectedTime(formatTime(selectedTime)); // Format and set selected time
+                      }
+                      setShowTimePicker(false); // Close the time picker
+                    }}
+                  />
+                )}
+              </>
+            )}
 
             <TouchableOpacity
               style={styles.closeButton}
@@ -736,6 +719,19 @@ const styles = StyleSheet.create({
     color: "#7C7C7C",
     alignSelf: "flex-start", // Left align the text
   },
+
+  selectLabel1: {
+    paddingTop: 20,
+    paddingRight: 225,
+    fontSize: 16,
+
+    color: "#7C7C7C",
+  },
+  selectedWeekText1: {
+    paddingRight: 250,
+    color: "#000000",
+    paddingBottom: 20,
+  },
   dropdownContainer: {
     width: "100%",
     alignItems: "flex-start", // Align items to the start
@@ -756,6 +752,9 @@ const styles = StyleSheet.create({
     width: "80%",
     alignItems: "center",
     borderRadius: 5,
+  },
+  dateRangeText1: {
+    paddingRight: 140,
   },
   closeButtonText: {
     color: "white",

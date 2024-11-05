@@ -25,6 +25,7 @@ import ContactUsScreen from "./components/ContactUsScreen";
 import TravellerSignup from "./components/TravellerSignup";
 import TravellerLogin from "./components/TravellerLogin";
 import TravellerHomeScreen from "./components/TravellerHomeScreen";
+import RideList from "./components/RideList";
 
 const Stack = createStackNavigator();
 
@@ -141,6 +142,11 @@ function App() {
         <Stack.Screen
           name="TravellerHomeScreen"
           component={TravellerHomeScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="RideList"
+          component={RideList}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

@@ -13,6 +13,7 @@ import axios from "axios";
 import { useNavigation } from "@react-navigation/native";
 import * as Font from "expo-font";
 import DropDownPicker from "react-native-dropdown-picker";
+import AsyncStorage from "@react-native-async-storage/async-storage"; // Import AsyncStorage
 
 const { width, height } = Dimensions.get("window");
 
@@ -60,21 +61,28 @@ const DriverSignup = () => {
     }
 
     try {
-      const response = await fetch("http://192.168.1.5:3000/auth/api/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: name,
-          phonenumber: phone,
-          password: password,
-        }),
-      });
+      const response = await fetch(
+        "http://192.168.43.235:3000/auth/api/signup",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: name,
+            phonenumber: phone,
+            password: password,
+            type: "driver",
+          }),
+        }
+      );
 
       const data = await response.json();
 
       if (response.ok) {
+        // Store the name in AsyncStorage
+        await AsyncStorage.setItem("userName", name);
+
         // Account created successfully
         alert("Account created successfully!");
         navigation.navigate("DriverVerification");
@@ -101,7 +109,7 @@ const DriverSignup = () => {
   const phoneNumberWithCode = `${value} ${phone}`;
 
   const handleDriverPress = () => {
-    navigation.navigate("DriverLogin");
+    navigation.navigate("DriverLogin", { name });
   };
 
   return (

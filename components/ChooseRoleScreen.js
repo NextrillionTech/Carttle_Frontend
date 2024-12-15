@@ -9,6 +9,7 @@ import {
   Animated,
   Easing,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import { useFonts } from "expo-font";
 
@@ -56,11 +57,22 @@ const ChooseRoleScreen = () => {
     }
   }, [fontsLoaded]); // Run animation only after fonts are loaded
 
+  // Function to store user type in AsyncStorage
+  const storeUserType = async (userType) => {
+    try {
+      await AsyncStorage.setItem("userType", userType);
+    } catch (error) {
+      console.error("Error saving user type:", error);
+    }
+  };
+
   const handleTravelerPress = () => {
+    storeUserType("Traveler"); // Save "Traveler" as user type
     navigation.navigate("TravellerWelcome");
   };
 
   const handleDriverPress = () => {
+    storeUserType("Driver"); // Save "Driver" as user type
     navigation.navigate("DriverWelcome");
   };
 

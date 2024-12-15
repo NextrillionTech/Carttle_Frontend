@@ -38,7 +38,12 @@ const TravellerHomeScreen = ({ navigation }) => {
   const [showRadioButtons, setShowRadioButtons] = useState(false);
   const [selectedTime, setSelectedTime] = useState("Now");
   const [modalVisible, setModalVisible] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+
+  const [userName, setUserName] = useState("");
+
+  const [searchQuery1, setSearchQuery1] = useState("");
+
+  const [searchQuery2, setSearchQuery2] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [fontLoaded, setFontLoaded] = useState(false);
   const [isMenuVisible, setMenuVisible] = useState(false);
@@ -47,6 +52,26 @@ const TravellerHomeScreen = ({ navigation }) => {
   const [destinationCoordinates, setDestinationCoordinates] = useState(null);
   const slideAnim = useRef(new Animated.Value(-300)).current; // Start off-screen
   const [stateName, setStateName] = useState(""); // Use state instead of a simple variable
+
+  const [originCoordinates, setOriginCoordinates] = useState(null); // Add this to track the origin
+
+  useEffect(() => {
+    const fetchUserName = async () => {
+      try {
+        const name = await AsyncStorage.getItem("userName");
+        if (name !== null) {
+          setUserName(name); // Set the user name if it exists
+        } else {
+          Alert.alert("No user found", "User name is not available.");
+        }
+      } catch (error) {
+        console.error("Failed to fetch user name:", error);
+        Alert.alert("Error", "Failed to fetch user name.");
+      }
+    };
+
+    fetchUserName();
+  }, []);
 
   const formatStateName = (contextArray) => {
     const stateInfo = contextArray.find((context) =>
@@ -123,24 +148,29 @@ const TravellerHomeScreen = ({ navigation }) => {
   }, []);
 
   const reverseGeocodeLocation = async (latitude, longitude) => {
+    setPlaceName("Fetching current location..."); // Set initial loading message
+
     try {
       const response = await axios.get(
         `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${MAPBOX_ACCESS_TOKEN}`
       );
 
       const features = response.data.features;
-
       if (features.length > 0) {
         const place = features[0];
         const placeName = place.place_name || "Unknown location";
-        const stateContext = place.context.find((context) =>
-          context.id.includes("region")
-        );
-        const newStateName = stateContext
-          ? stateContext.text.replace(/\s+/g, "-").toLowerCase()
-          : "unknown-state";
-        setStateName(newStateName); // Set the state name
-        console.log("State Name:", newStateName); // Log the state name for debugging
+        setPlaceName(placeName); // Set the actual location name
+
+        const context = place.context || [];
+        const stateInfo = context.find((ctx) => ctx.id.includes("region"));
+        let state = stateInfo ? stateInfo.text : "Unknown State";
+
+        // Format the state name: lowercase and replace spaces with hyphens
+        state = state.toLowerCase().replace(/\s+/g, "-");
+        setStateName(state); // Set the formatted state name
+
+        // Log statements for debugging
+        console.log("State Name:", state);
       } else {
         setPlaceName("Unknown location");
       }
@@ -149,7 +179,6 @@ const TravellerHomeScreen = ({ navigation }) => {
       setPlaceName("Unknown location");
     }
   };
-
   const openTimeSelection = (event) => {
     event.target.measure((fx, fy, width, height, px, py) => {
       setDropdownPosition({ x: 20, y: 670 });
@@ -177,8 +206,46 @@ const TravellerHomeScreen = ({ navigation }) => {
     setModalVisible(true);
   };
 
-  const handleSearch = async (query) => {
-    setSearchQuery(query);
+  const handleSearch1 = async (query) => {
+    setSearchQuery1(query);
+
+    if (query.length > 2) {
+      try {
+        const response = await axios.get(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${query}.json?access_token=${MAPBOX_ACCESS_TOKEN}&proximity=${userLocation.longitude},${userLocation.latitude}&limit=5`
+        );
+
+        const fetchedSuggestions = response.data.features || [];
+
+        // Only add current location if it's been successfully fetched
+        const currentLocationSuggestion =
+          placeName && placeName !== "Fetching current location..."
+            ? [
+                {
+                  id: "current-location", // Unique identifier
+                  place_name: `Current Location: ${placeName}`,
+                  geometry: {
+                    coordinates: [
+                      userLocation.longitude,
+                      userLocation.latitude,
+                    ],
+                  },
+                },
+              ]
+            : [];
+
+        setSuggestions([...currentLocationSuggestion, ...fetchedSuggestions]);
+      } catch (error) {
+        console.error("Error fetching suggestions:", error);
+        setSuggestions([]);
+      }
+    } else {
+      setSuggestions([]);
+    }
+  };
+
+  const handleSearch2 = async (query) => {
+    setSearchQuery2(query);
     if (query.length > 2) {
       try {
         const response = await axios.get(
@@ -206,64 +273,82 @@ const TravellerHomeScreen = ({ navigation }) => {
     </TouchableOpacity>
   );
 
-  const selectSuggestion = async (suggestion) => {
+  const selectSuggestion = async (suggestion, isOriginBoxActive) => {
     const destinationCoordinates = {
       latitude: suggestion.geometry.coordinates[1],
       longitude: suggestion.geometry.coordinates[0],
     };
 
-    setDestinationCoordinates(destinationCoordinates);
-    setSearchQuery(suggestion.place_name);
-    setModalVisible(false);
+    if (isOriginBoxActive) {
+      setSearchQuery1(suggestion.place_name); // Update origin search query
+      setOriginCoordinates(destinationCoordinates); // Set the origin coordinates
+      console.log("Origin Selected:", suggestion.place_name);
 
-    const data = {
-      origin: `${userLocation.latitude},${userLocation.longitude}`,
-      destination: `${destinationCoordinates.latitude},${destinationCoordinates.longitude}`,
-      state: stateName, // Ensure this is set correctly
-    };
+      await AsyncStorage.setItem("originName", suggestion.place_name);
+    } else {
+      setSearchQuery2(suggestion.place_name); // Update destination search query
+      setDestinationCoordinates(destinationCoordinates); // Set the destination coordinates
 
-    // Console logs to check the values being sent
-    console.log("Origin:", data.origin);
-    console.log("Destination:", data.destination);
-    console.log("State Name:", stateName);
+      console.log("Destination Selected:", suggestion.place_name); // Log destination
+      await AsyncStorage.setItem("destinationName", suggestion.place_name);
+    }
 
-    try {
-      // Call the distance matrix API
-      const response = await axios.post(
-        "http://192.168.1.3:3000/distanceMatrix",
-        data
-      );
-      console.log("Distance:", response.data.distance);
+    // Check if both origin and destination are selected
+    if (searchQuery1 && searchQuery2) {
+      setModalVisible(false); // Close the modal only after both locations are selected
 
-      // Call the cost calculator API
-      const costResponse = await axios.post(
-        "http://192.168.1.3:3000/calculate-cost",
-        {
-          state: stateName,
-          origin: `${userLocation.latitude},${userLocation.longitude}`,
-          destination: `${destinationCoordinates.latitude},${destinationCoordinates.longitude}`,
-        }
-      );
+      const data = {
+        origin: `${userLocation.latitude},${userLocation.longitude}`,
+        destination: `${destinationCoordinates.latitude},${destinationCoordinates.longitude}`,
+        state: stateName, // Ensure this is set correctly
+      };
 
-      console.log("Fuel Price:", costResponse.data.fuelPrice);
-      console.log("Total Distance:", costResponse.data.distance);
-      console.log("Total Cost:", costResponse.data.totalCost);
+      console.log("State Name:", stateName);
 
-      navigation.navigate("MapScreen", {
-        destination: destinationCoordinates,
-        userLocation,
-        distance: response.data.distance,
-        totalCost: costResponse.data.totalCost,
-      });
-    } catch (error) {
-      console.error(
-        "Error sending data to backend:",
-        error.response ? error.response.data : error.message
-      );
-      Alert.alert(
-        "Error",
-        "Could not calculate distance and cost, please try again."
-      );
+      try {
+        // Call the distance matrix API
+        const response = await axios.post(
+          "http://192.168.43.235:3000/distanceMatrix",
+          data
+        );
+        console.log("Distance:", response.data.distance);
+
+        // Call the cost calculator API
+        const costResponse = await axios.post(
+          "http://192.168.43.235:3000/calculate-cost",
+          {
+            state: stateName,
+            origin: `${userLocation.latitude},${userLocation.longitude}`,
+            destination: `${destinationCoordinates.latitude},${destinationCoordinates.longitude}`,
+          }
+        );
+
+        console.log("Fuel Price:", costResponse.data.fuelPrice);
+        console.log("Total Distance:", costResponse.data.distance);
+        console.log("Total Cost:", costResponse.data.totalCost);
+
+        navigation.navigate("MapScreen", {
+          destination: destinationCoordinates,
+          origin: originCoordinates,
+          distance: response.data.distance,
+          totalCost: costResponse.data.totalCost,
+        });
+        console.log("Data sent to MapScreen:", {
+          destination: destinationCoordinates,
+          origin: originCoordinates,
+          distance: costResponse.data.distance,
+          totalCost: costResponse.data.totalCost,
+        });
+      } catch (error) {
+        console.error(
+          "Error sending data to backend:",
+          error.response ? error.response.data : error.message
+        );
+        Alert.alert(
+          "Error",
+          "Could not calculate distance and cost, please try again."
+        );
+      }
     }
   };
   if (errorMsg) {
@@ -310,8 +395,8 @@ const TravellerHomeScreen = ({ navigation }) => {
                 source={require("../assets/profilePic.jpg")}
                 style={styles.profileImage}
               />
-              <Text style={styles.userName}>Naina Kapoor</Text>
-              <Text style={styles.userEmail}>naina**@gmail.com</Text>
+              <Text style={styles.userName}>{userName}</Text>
+              <Text style={styles.userEmail}>email placeholder</Text>
               <View style={styles.menuOptions}>
                 <TouchableOpacity>
                   <Text style={styles.menuOptionText}>Profile</Text>
@@ -355,7 +440,7 @@ const TravellerHomeScreen = ({ navigation }) => {
       />
 
       <View style={styles.overlayContainer}>
-        <Text style={styles.heading}>Where To Take Next?</Text>
+        <Text style={styles.heading}>Where To Next?</Text>
         <View style={styles.horizontalLine} />
         <Text style={styles.heading1}>Select Time and Location</Text>
         <View style={styles.selectionContainer}>
@@ -423,23 +508,19 @@ const TravellerHomeScreen = ({ navigation }) => {
             <View style={styles.horizontalRuler} />
 
             <View style={styles.searchContainer}>
-              <Image
-                source={require("../assets/loc.png")}
-                style={styles.searchIcon}
-              />
-              <Text style={styles.currentLocationText}>{placeName}</Text>
-            </View>
-
-            <View style={styles.searchContainer}>
-              <Image
-                source={require("../assets/loc.png")}
-                style={styles.searchIcon}
-              />
               <TextInput
                 style={styles.searchInput}
-                placeholder="Search for a place"
-                value={searchQuery}
-                onChangeText={handleSearch}
+                placeholder="Select Location"
+                value={searchQuery1}
+                onChangeText={(query) => handleSearch1(query, true)} // true for origin
+              />
+            </View>
+            <View style={styles.searchContainer}>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Select Destination"
+                value={searchQuery2}
+                onChangeText={(query) => handleSearch2(query, false)} // false for destination
               />
             </View>
 
@@ -450,9 +531,9 @@ const TravellerHomeScreen = ({ navigation }) => {
                 <TouchableOpacity
                   style={styles.suggestionItem}
                   onPress={() => {
-                    selectSuggestion(item);
-                    setDestinationCoordinates(item.geometry.coordinates); // Store destination coordinates
-                    setModalVisible(false); // Close modal after selection
+                    // Check if the first or second search box is active and update accordingly
+                    const isOriginBoxActive = searchQuery1.length > 0;
+                    selectSuggestion(item, isOriginBoxActive); // Pass true for the origin box and false for destination
                   }}
                 >
                   <Text style={styles.suggestionText}>{item.place_name}</Text>

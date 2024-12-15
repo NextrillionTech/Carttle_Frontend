@@ -39,7 +39,7 @@ const DriverLogin = () => {
 
     try {
       const response = await fetch(
-        "http://192.168.29.99:3000/auth/api/signin",
+        "http://192.168.43.235:3000/auth/api/signin",
         {
           method: "POST",
           headers: {
@@ -59,10 +59,12 @@ const DriverLogin = () => {
 
         // Store user ID in AsyncStorage
         await AsyncStorage.setItem("userId", data._id); // Assuming data._id is the user ID
+        await AsyncStorage.setItem("phoneNumber", phoneNumber);
 
-        // Retrieve and log the user ID to check if it's stored
         const storedUserId = await AsyncStorage.getItem("userId");
+        const storedPhoneNumber = await AsyncStorage.getItem("phoneNumber");
         console.log("Stored User ID:", storedUserId);
+        console.log("Stored Phone Number:", storedPhoneNumber);
 
         navigation.navigate("HomeScreen"); // Navigate to home screen after login
       } else {

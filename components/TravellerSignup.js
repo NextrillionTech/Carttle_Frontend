@@ -54,7 +54,42 @@ const TravellerSignup = () => {
   };
 
   const handleCreateAccount = async () => {
-    navigation.navigate("TravellerHomeScreen");
+    if (!name || !phone || !password) {
+      alert("Please fill out all fields.");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        "http://192.168.43.235:3000/auth/api/signup",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: name,
+            phonenumber: phone,
+            password: password,
+            type: "passenger",
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Account created successfully
+        alert("Account created successfully!");
+        navigation.navigate("TravellerLogin");
+      } else {
+        // Handle errors returned from the backend
+        alert(data.msg || "Something went wrong, please try again.");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Failed to create account. Please try again.");
+    }
   };
 
   const handlePhoneChange = (text) => {

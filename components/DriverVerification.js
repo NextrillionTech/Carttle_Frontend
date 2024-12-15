@@ -29,6 +29,7 @@ const DriverVerification = () => {
   const [date, setDate] = useState(new Date());
   const [show, setShow] = useState(false);
   const [licenseNumber, setLicenseNumber] = useState("");
+  const [name, setname] = useState("");
   const [carRegNumber, setCarRegNumber] = useState("");
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -96,18 +97,22 @@ const DriverVerification = () => {
     try {
       // First, verify driving license
       const dlResponse = await axios.post(
-        "http://10.11.52.77:3000/verify-dl",
+        "http://192.168.43.235:3000/verify-dl",
         dlData
       );
 
       if (dlResponse.status === 200) {
         // If DL verification is successful, proceed with RC verification
         const rcResponse = await axios.post(
-          "http://10.11.52.77:3000/verify-rc",
+          "http://192.168.43.235:3000/verify-rc",
           rcData
         );
 
         if (rcResponse.status === 200) {
+          await AsyncStorage.setItem("dlnumber", licenseNumber);
+          await AsyncStorage.setItem("carRegNumber", carRegNumber);
+          await AsyncStorage.setItem("dob", dobFormatted);
+          await AsyncStorage.setItem("rc_model", rcResponse.data.data.rc_model); // Storing rc_model in AsyncStorage
           Alert.alert("Success", "Your DL and RC details have been verified!");
           navigation.navigate("HomeScreen");
         } else {
@@ -162,6 +167,15 @@ const DriverVerification = () => {
           placeholderTextColor="#7C7C7C"
         />
       </View>
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          value={name}
+          onChangeText={setname}
+          placeholder="*Name*"
+          placeholderTextColor="#7C7C7C"
+        />
+      </View>
 
       <View style={styles.inputContainer}>
         <TextInput
@@ -189,7 +203,6 @@ const DriverVerification = () => {
         />
       )}
 
-      {/* Grouped Confirm button, line1, and skip text */}
       <View style={styles.footer}>
         <TouchableOpacity
           style={styles.Confirmbutton}
@@ -214,7 +227,6 @@ const DriverVerification = () => {
     </View>
   );
 };
-
 const styles = {
   container: {
     flex: 1,

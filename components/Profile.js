@@ -1,9 +1,10 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
   Image,
   TouchableOpacity,
+  Alert,
   StyleSheet,
   PermissionsAndroid,
   Animated,
@@ -13,21 +14,103 @@ import {
   ScrollView,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { Picker } from "@react-native-picker/picker";
+import AsyncStorage from "@react-native-async-storage/async-storage"; // Import AsyncStorage
 
 import BottomNav from "./BottomNav";
-import * as ImagePicker from "react-native-image-picker";
-import { Picker } from "@react-native-picker/picker";
+import * as ImagePicker from "expo-image-picker";
 
 export default function Profile() {
   const [selectedImage, setSelectedImage] = useState(null);
   const [activeTab, setActiveTab] = useState("");
   const [isMenuVisible, setMenuVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(-300)).current;
-  const [text, setText] = useState("");
+  const [userName, setUserName] = useState("");
+
+  const [email, setEmail] = useState("");
   const [gender, setGender] = useState("");
   const [personalityType, setPersonalityType] = useState("");
   const [musicTaste, setMusicTaste] = useState("");
   const [drivingStyle, setDrivingStyle] = useState("");
+
+  const [phoneNumber, setPhoneNumber] = useState(null);
+
+  const [userId, setUserId] = useState(null);
+
+  const [dlnumber, setDlnumber] = useState(null);
+  const [carRegNumber, setCarRegNumber] = useState(null);
+  const [dob, setDob] = useState(null);
+
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    const fetchUserName = async () => {
+      try {
+        const name = await AsyncStorage.getItem("userName");
+        if (name !== null) {
+          setUserName(name); // Set the user name if it exists
+        } else {
+          Alert.alert("No user found", "User name is not available.");
+        }
+      } catch (error) {
+        console.error("Failed to fetch user name:", error);
+        Alert.alert("Error", "Failed to fetch user name.");
+      }
+    };
+
+    fetchUserName();
+  }, []);
+
+  useEffect(() => {
+    const fetchDetails = async () => {
+      try {
+        const storedDlnumber = await AsyncStorage.getItem("dlnumber");
+        const storedCarRegNumber = await AsyncStorage.getItem("carRegNumber");
+        const storedDob = await AsyncStorage.getItem("dob");
+
+        if (storedDlnumber) setDlnumber(storedDlnumber);
+        if (storedCarRegNumber) setCarRegNumber(storedCarRegNumber);
+        if (storedDob) setDob(storedDob);
+      } catch (error) {
+        console.error("Error fetching driver details:", error);
+        Alert.alert("Error", "Failed to fetch driver details.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDetails();
+  }, []);
+
+  useEffect(() => {
+    const fetchPhoneNumber = async () => {
+      try {
+        const storedPhoneNumber = await AsyncStorage.getItem("phoneNumber");
+        if (storedPhoneNumber) {
+          setPhoneNumber(storedPhoneNumber);
+        } else {
+          setPhoneNumber("No phone number found.");
+        }
+      } catch (error) {
+        console.error("Error fetching phone number:", error);
+      }
+    };
+
+    fetchPhoneNumber();
+  }, []);
+
+  useEffect(() => {
+    const fetchUserId = async () => {
+      try {
+        const id = await AsyncStorage.getItem("userId");
+        setUserId(id);
+      } catch (error) {
+        console.error("Failed to fetch user ID:", error);
+      }
+    };
+
+    fetchUserId();
+  }, []);
 
   const handleTabPress = (tab) => {
     setActiveTab(tab);
@@ -41,11 +124,10 @@ export default function Profile() {
   };
 
   const profileData = {
-    name: "",
-    mobile: "",
-    dlNumber: "",
-    carRegNo: "",
-    dob: "",
+    mobile: phoneNumber,
+    dlNumber: dlnumber,
+    carRegNo: carRegNumber,
+    dob: dob,
   };
 
   const requestPermissions = async () => {
@@ -60,7 +142,6 @@ export default function Profile() {
       console.warn("Permission error", error);
     }
   };
-  const navigation = useNavigation();
 
   const toggleMenu = () => {
     if (isMenuVisible) {
@@ -86,42 +167,63 @@ export default function Profile() {
   };
 
   const openImagePicker = async () => {
-    await requestPermissions();
-    ImagePicker.launchImageLibrary(
-      {
-        mediaType: "photo",
-        selectionLimit: 1,
-      },
-      (response) => {
-        if (response.didCancel) {
-          console.log("User cancelled image picker");
-        } else if (response.errorCode) {
-          console.log("ImagePicker Error: ", response.errorMessage);
-        } else if (response.assets && response.assets.length > 0) {
-          setSelectedImage(response.assets[0].uri);
-        }
-      }
-    );
+    // Request permission to access the gallery
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permissionResult.granted) {
+      alert("Permission to access gallery is required!");
+      return;
+    }
+
+    // Open the image picker
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setSelectedImage(result.assets[0].uri);
+    }
   };
 
   const openNotifications = () => {
     // Navigation to notifications...
   };
 
-  const openCamera = async () => {
-    await requestPermissions();
-    ImagePicker.launchCamera(
-      {
-        mediaType: "photo",
-      },
-      (response) => {
-        if (response.assets) {
-          setSelectedImage(response.assets[0].uri);
-        }
-      }
-    );
-  };
+  const handleSave = async () => {
+    if (!email || !gender || !personalityType || !musicTaste || !drivingStyle) {
+      Alert.alert("Error", "Please fill all the fields before saving.");
+      return;
+    }
 
+    try {
+      const response = await fetch("http://192.168.43.235:3000/update-user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email,
+          gender,
+          personalityType,
+          musicTaste,
+          drivingStyle,
+          userId: userId,
+        }),
+      });
+
+      if (response.ok) {
+        Alert.alert("Success", "Profile saved successfully!");
+      } else {
+        throw new Error("Network response was not ok.");
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to save profile. Please try again.");
+    }
+  };
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
@@ -155,7 +257,7 @@ export default function Profile() {
           />
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={openCamera}>
+        <TouchableOpacity onPress={openImagePicker}>
           <Text style={styles.cameraIcon}>📷</Text>
         </TouchableOpacity>
 
@@ -196,8 +298,8 @@ export default function Profile() {
         <TextInput
           style={[styles.input, { color: "#d0d0d0" }]}
           placeholder="Email ID"
-          value={text}
-          onChangeText={setText}
+          value={email}
+          onChangeText={setEmail}
         />
 
         <View style={styles.pickerContainer}>
@@ -251,6 +353,9 @@ export default function Profile() {
             <Picker.Item label="Melody" value="melody" />
           </Picker>
         </View>
+        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+          <Text style={styles.saveButtonText}>Save</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       {isMenuVisible && (
@@ -268,8 +373,8 @@ export default function Profile() {
                 source={require("../assets/profilePic.jpg")}
                 style={styles.profileImage}
               />
-              <Text style={styles.userName}>Naina Kapoor</Text>
-              <Text style={styles.userEmail}>naina****@gmail.com</Text>
+              <Text style={styles.userName}>{userName}</Text>
+              <Text style={styles.userEmail}>email placeholder</Text>
               <View style={styles.menuOptions}>
                 <TouchableOpacity
                   onPress={() => navigation.navigate("Profile")}
@@ -310,6 +415,25 @@ export default function Profile() {
 }
 
 const styles = StyleSheet.create({
+  saveButton: {
+    backgroundColor: "black",
+    padding: 15,
+    borderRadius: 5,
+    alignItems: "center",
+    marginVertical: 20,
+    height: "10%",
+    width: "20%",
+    alignContent: "center",
+    alignSelf: "center",
+  },
+  saveButtonText: {
+    color: "white",
+    fontSize: 10,
+    paddingBottom: 0.9,
+    alignItems: "center",
+    alignContent: "center",
+    fontFamily: "poppins",
+  },
   container: {
     flex: 1,
     justifyContent: "space-between",

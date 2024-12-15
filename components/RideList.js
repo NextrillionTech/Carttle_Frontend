@@ -52,8 +52,10 @@ const RideItem = ({ ride }) => {
           <Text style={styles.detailValue}>{ride.rideTime}</Text>
         </View>
       </View>
-      <TouchableOpacity style={styles.requestButton} onPress={handleRequest}>
-        <Text style={styles.requestButtonText}>Request Ride</Text>
+      <TouchableOpacity style={styles.requestButton}>
+        <Text style={styles.requestButtonText} onPress={handleRequestPress}>
+          Request Ride
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -74,8 +76,8 @@ const RidesList = () => {
     }
   };
 
-  const handleRequest = () => {
-    navigation.navigate("TravellerRide");
+  const handleRequestPress = () => {
+    navigation.navigate("TravelBooking");
   };
 
   const openMenu = () => {

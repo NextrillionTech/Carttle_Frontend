@@ -13,20 +13,36 @@ import { Ionicons } from "@expo/vector-icons"; // For the back icon
 import { useFonts } from "expo-font";
 
 const RideSuccessful = ({ route }) => {
-  const { rideDetails } = route.params; // Get ride details from route parameters
-  const [currentLocationName, setCurrentLocationName] = useState(""); // State for current location name
-  const [destinationName, setDestinationName] = useState(""); // State for destination name
+  // Get ride details and rideId from route params
+  const {
+    originName,
+    destinationName,
+    availableSeats,
+    amountPerSeat,
+    date,
+    time,
+    rideId, // Extract rideId from params
+  } = route.params;
 
-  console.log("Ride Details:", rideDetails);
-  const rideId = rideDetails.__id;
+  console.log("Ride Details:", {
+    originName,
+    destinationName,
+    availableSeats,
+    amountPerSeat,
+    date,
+    time,
+    rideId, // Log the rideId
+  });
 
   const navigation = useNavigation();
   const [fontsLoaded] = useFonts({
     "poppins-medium": require("../assets/Poppins-Medium.ttf"),
   });
+
   const handleBack = () => {
     navigation.goBack();
   };
+
   const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } =
     Dimensions.get("window");
 
@@ -36,7 +52,6 @@ const RideSuccessful = ({ route }) => {
       const response = await axios.get(
         `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
       );
-      // Extract place name from response
       const address = response.data.address;
       const placeName =
         address.name ||
@@ -46,42 +61,36 @@ const RideSuccessful = ({ route }) => {
         address.road ||
         address.street ||
         "Place name not found"; // Use specific commercial attributes if available
-      return placeName; // Return the best available name
+      return placeName;
     } catch (error) {
       console.error("Error fetching place name:", error);
-      return "Error fetching place name"; // Handle error
+      return "Error fetching place name";
     }
   };
 
   // Function to format date to DD/MM/YYYY
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, "0");
-    const month = String(date.getMonth() + 1).padStart(2, "0"); // Month is zero-based
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
+  const getCurrentDateTime = () => {
+    const now = new Date();
+
+    // Format the date as DD/MM/YYYY
+    const day = String(now.getDate()).padStart(2, "0");
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const year = now.getFullYear();
+    const formattedDate = `${day}/${month}/${year}`;
+
+    // Format the time as HH:MM AM/PM
+    let hours = now.getHours();
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    const period = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12 || 12; // Convert 0 to 12 for midnight
+
+    const formattedTime = `${String(hours).padStart(
+      2,
+      "0"
+    )}:${minutes} ${period}`;
+
+    return `${formattedDate}, ${formattedTime}`;
   };
-
-  // Fetch place names when component mounts
-  useEffect(() => {
-    const fetchPlaceNames = async () => {
-      // Get current location name
-      const currentName = await getPlaceName(
-        rideDetails.currentLocation.latitude,
-        rideDetails.currentLocation.longitude
-      );
-      setCurrentLocationName(currentName);
-
-      // Get destination name
-      const destinationName = await getPlaceName(
-        rideDetails.destination.latitude,
-        rideDetails.destination.longitude
-      );
-      setDestinationName(destinationName);
-    };
-
-    fetchPlaceNames();
-  }, [rideDetails]);
 
   return (
     <View style={styles.container}>
@@ -95,12 +104,13 @@ const RideSuccessful = ({ route }) => {
       </View>
 
       <Text style={styles.successText}>Ride Created Successfully</Text>
+
       <Text style={styles.rideId}>{rideId}</Text>
 
       <View style={styles.detailsContainer}>
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>From:</Text>
-          <Text style={styles.detailValue}>{currentLocationName}</Text>
+          <Text style={styles.detailValue}>{originName}</Text>
         </View>
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>To:</Text>
@@ -109,20 +119,26 @@ const RideSuccessful = ({ route }) => {
 
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Available Seats</Text>
-          <Text style={styles.detailValue}>{rideDetails.availableSeats}</Text>
+          <Text style={styles.detailValue}>{availableSeats}</Text>
         </View>
 
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Amount Per Seat</Text>
-          <Text style={styles.detailValue}>{rideDetails.amountPerSeat}</Text>
+          <Text style={styles.detailValue}>{amountPerSeat}</Text>
         </View>
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Timestamp</Text>
           <Text style={styles.detailValue}>
-            {formatDate(rideDetails.date)},{rideDetails.time}
+            {getCurrentDateTime(date)}, {time}
           </Text>
         </View>
+        {/* Display the rideId */}
+        <View style={styles.detailRow}>
+          <Text style={styles.detailLabel}>Ride ID</Text>
+          <Text style={styles.detailValue}>{rideId}</Text>
+        </View>
       </View>
+
       <TouchableOpacity
         style={styles.button}
         onPress={() => navigation.navigate("RidesScreen")}
@@ -132,7 +148,6 @@ const RideSuccessful = ({ route }) => {
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,

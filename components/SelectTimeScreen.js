@@ -11,17 +11,18 @@ import {
   TextInput,
   Modal,
   FlatList,
-  setLoading,
   TouchableWithoutFeedback,
   Keyboard,
 } from "react-native";
 
 import MapView, { Marker, UrlTile } from "react-native-maps";
 import * as Location from "expo-location";
+import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage"; // Import AsyncStorage
+
 import BottomNav from "./BottomNav";
 import * as Font from "expo-font";
-import AsyncStorage from "@react-native-async-storage/async-storage"; // Import sAsyncStorage
 
 const fetchFonts = () => {
   return Font.loadAsync({
@@ -33,15 +34,15 @@ const MAPBOX_ACCESS_TOKEN =
   "sk.eyJ1IjoibmV4dHJpbGxpb24tdGVjaCIsImEiOiJjbHpnaHdiaTkxb29xMmpxc3V5bTRxNWNkIn0.l4AsMHEMhAEO90klTb3oCQ";
 const MAPBOX_TILE_URL = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/256/{z}/{x}/{y}@2x?access_token=${MAPBOX_ACCESS_TOKEN}`;
 
-const HomeScreen = ({ navigation }) => {
+const SelectedTimeScreen = ({ navigation, route }) => {
+  const { selectedTime } = route.params; // Get the selected time from navigation parameters
+  const [selectedTimeState, setSelectedTimeState] = useState(selectedTime); // Set it in state
   const [region, setRegion] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   const [activeTab, setActiveTab] = useState("home");
   const [showRadioButtons, setShowRadioButtons] = useState(false);
-  const [selectedTime, setSelectedTime] = useState("Now");
-  const [userName, setUserName] = useState("");
-
+  const [setSelectedTime] = useState("Now");
   const [modalVisible, setModalVisible] = useState(false);
   const [searchQuery1, setSearchQuery1] = useState("");
 
@@ -54,7 +55,7 @@ const HomeScreen = ({ navigation }) => {
   const [destinationCoordinates, setDestinationCoordinates] = useState(null);
   const slideAnim = useRef(new Animated.Value(-300)).current; // Start off-screen
   const [stateName, setStateName] = useState(""); // Use state instead of a simple variable
-
+  const [time, setTime] = useState("Select Time");
   const [originCoordinates, setOriginCoordinates] = useState(null); // Add this to track the origin
 
   const formatStateName = (contextArray) => {
@@ -67,24 +68,6 @@ const HomeScreen = ({ navigation }) => {
   const openNotifications = () => {
     navigation.navigate("NotificationScreen");
   };
-
-  useEffect(() => {
-    const fetchUserName = async () => {
-      try {
-        const name = await AsyncStorage.getItem("userName");
-        if (name !== null) {
-          setUserName(name); // Set the user name if it exists
-        } else {
-          Alert.alert("No user found", "User name is not available.");
-        }
-      } catch (error) {
-        console.error("Failed to fetch user name:", error);
-        Alert.alert("Error", "Failed to fetch user name.");
-      }
-    };
-
-    fetchUserName();
-  }, []);
 
   useEffect(() => {
     const loadFonts = async () => {
@@ -106,6 +89,25 @@ const HomeScreen = ({ navigation }) => {
       }).start();
     }
   };
+
+  const generateFutureTimes = () => {
+    const times = [];
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 30 - (now.getMinutes() % 30)); // Round to the nearest future half-hour
+    for (let i = 0; i < 48; i++) {
+      // Generate up to 24 hours (48 half-hour intervals)
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
+      const period = hours >= 12 ? "PM" : "AM";
+      const formattedHours = ((hours + 11) % 12) + 1; // Convert to 12-hour format
+      const formattedMinutes = minutes.toString().padStart(2, "0");
+      times.push(`${formattedHours}:${formattedMinutes} ${period}`);
+      now.setMinutes(now.getMinutes() + 30); // Increment by 30 minutes
+    }
+    return times;
+  };
+
+  const timeOptions = generateFutureTimes();
 
   const closeMenu = () => {
     Animated.timing(slideAnim, {
@@ -200,14 +202,6 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
-  const selectTime = (time) => {
-    setSelectedTime(time);
-    setShowRadioButtons(false);
-
-    // Navigate to the desired screen with the selected time as a parameter
-    navigation.navigate("SelectTimeScreen", { selectedTime: time });
-  };
-
   const openSearchModal = () => {
     setModalVisible(true);
   };
@@ -266,6 +260,7 @@ const HomeScreen = ({ navigation }) => {
       setSuggestions([]);
     }
   };
+
   const renderRadioButton = (time) => (
     <TouchableOpacity
       onPress={() => selectTime(time)}
@@ -277,6 +272,15 @@ const HomeScreen = ({ navigation }) => {
       <Text style={styles.radioButtonLabel}>{time}</Text>
     </TouchableOpacity>
   );
+
+  const selectTime = (time) => {
+    setSelectedTime(time);
+    setShowRadioButtons(false);
+
+    // Navigate to the desired screen with the selected time as a parameter
+    navigation.navigate("SelectedTimeScreen", { selectedTime: time });
+  };
+
   const selectSuggestion = async (suggestion, isOriginBoxActive) => {
     const destinationCoordinates = {
       latitude: suggestion.geometry.coordinates[1],
@@ -362,6 +366,7 @@ const HomeScreen = ({ navigation }) => {
       </View>
     );
   }
+
   return (
     <View style={styles.container}>
       <MapView style={styles.map} region={region}>
@@ -398,8 +403,8 @@ const HomeScreen = ({ navigation }) => {
                 source={require("../assets/profilePic.jpg")}
                 style={styles.profileImage}
               />
-              <Text style={styles.userName}>{userName}</Text>
-              <Text style={styles.userEmail}>email placeholder</Text>
+              <Text style={styles.userName}>Naina Kapoor</Text>
+              <Text style={styles.userEmail}>naina**@gmail.com</Text>
               <View style={styles.menuOptions}>
                 <TouchableOpacity
                   onPress={() => navigation.navigate("Profile")}
@@ -459,7 +464,7 @@ const HomeScreen = ({ navigation }) => {
               source={require("../assets/clock.png")}
               style={styles.optionIcon}
             />
-            <Text style={styles.optionText}>{selectedTime}</Text>
+            <Text style={styles.optionText}>{selectedTimeState}</Text>
             <Image
               source={require("../assets/dropdown.png")}
               style={styles.dropdownIcon}
@@ -469,9 +474,34 @@ const HomeScreen = ({ navigation }) => {
           <TouchableOpacity style={styles.optionButtonLarge}>
             <Image
               source={require("../assets/current_location.png")}
-              style={styles.optionIcon}
+              style={styles.optionIcon1}
             />
-            <Text style={styles.optionText}>Current Location</Text>
+
+            <Picker
+              selectedValue={time}
+              style={{
+                fontSize: 16,
+                height: 50,
+                width: "100%",
+                fontFamily: "poppins", // Poppins font applied here
+                color: "black",
+              }}
+              onValueChange={(itemValue) => setTime(itemValue)}
+              dropdownIconColor="#e8e8e8" // For Android, hide the default dropdown icon
+            >
+              <Picker.Item label="Select Time" value="Select Time" />
+              {timeOptions.map((timeOption, index) => (
+                <Picker.Item
+                  label={timeOption}
+                  value={timeOption}
+                  key={index}
+                />
+              ))}
+            </Picker>
+            <Image
+              source={require("../assets/dropdown.png")} // Replace with your image path
+              style={styles.dropdownIcon}
+            />
           </TouchableOpacity>
         </View>
         <TouchableOpacity
@@ -687,8 +717,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: "poppins",
     width: "100%",
-    marginTop: 10,
-    marginBottom: 10,
+    marginTop: 5,
+    marginBottom: 5,
     textAlign: "left",
   },
   horizontalLine: {
@@ -707,7 +737,6 @@ const styles = StyleSheet.create({
   },
 
   selectionContainer: {
-    flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 10,
   },
@@ -718,27 +747,35 @@ const styles = StyleSheet.create({
     backgroundColor: "#e8e8e8",
     padding: 10,
     borderRadius: 10,
-    marginRight: 5,
+    height: 50,
+    marginBottom: 5,
   },
   optionButtonLarge: {
     flexDirection: "row",
-    flex: 1.2,
     alignItems: "center",
-    backgroundColor: "#e8e8e8",
-    padding: 5,
+    backgroundColor: "#E8E8E8",
+    padding: 10,
     borderRadius: 10,
-    width: 150,
-    marginLeft: 5,
+    marginTop: 10,
+    height: 50,
+    fontFamily: "poppins",
   },
   optionIcon: {
-    width: "14%",
-    height: "14%",
+    width: "5%",
+    height: "5%",
+    marginRight: 10,
+    padding: 10,
+  },
+  optionIcon1: {
+    width: "4%",
+    height: "3%",
     marginRight: 10,
     padding: 10,
   },
   optionText: {
     fontSize: 16,
     fontFamily: "poppins",
+    marginLeft: 17,
   },
   dropdownIcon: {
     width: 30,
@@ -762,6 +799,7 @@ const styles = StyleSheet.create({
   destinationText: {
     fontSize: 16,
     color: "black",
+    marginLeft: 17,
     fontFamily: "poppins",
   },
   bottomNav: {
@@ -1008,6 +1046,17 @@ const styles = StyleSheet.create({
     fontFamily: "poppins",
     paddingVertical: 10,
   },
+  pickerContainer: {
+    margin: 16,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+  },
+  picker: {
+    height: 50,
+    width: "100%",
+    fontFamily: "poppins",
+  },
 });
 
-export default HomeScreen;
+export default SelectedTimeScreen;

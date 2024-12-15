@@ -9,6 +9,7 @@ import {
   Text,
   Image,
   Modal,
+  Alert,
   Dimensions,
   TouchableOpacity,
 } from "react-native";
@@ -24,7 +25,6 @@ import BottomNav from "./BottomNav";
 const { height, width } = Dimensions.get("window");
 
 const MapScreen = ({ route }) => {
-  const [currentLocation, setCurrentLocation] = useState(null);
   const [routeCoords, setRouteCoords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -36,8 +36,15 @@ const MapScreen = ({ route }) => {
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const navigation = useNavigation();
+  const [rcModel, setRcModel] = useState(null);
+  const [carRegNumber, setCarRegNumber] = useState(null);
 
-  const { totalCost } = route.params;
+  const [name, setName] = useState("");
+
+  const [userName, setUserName] = useState("");
+
+  const [modalCommuteRegularly, setModalCommuteRegularly] = useState(false); // Toggle for modal
+  const { totalCost, origin, destination } = route.params;
 
   const slideAnim = useRef(new Animated.Value(-300)).current;
   const [selectedTime, setSelectedTime] = useState("");
@@ -45,7 +52,6 @@ const MapScreen = ({ route }) => {
   const [timeOptions, setTimeOptions] = useState([]);
   const [commuteBackRegularly, setCommuteBackRegularly] = useState(false);
 
-  const { destination } = route.params;
   const [activeTab, setActiveTab] = useState("home");
   const [commuteRegularly, setCommuteRegularly] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
@@ -55,8 +61,134 @@ const MapScreen = ({ route }) => {
   const [date, setDate] = useState(new Date());
   const [time, setTime] = useState(new Date());
 
+  const [time1, setTime1] = useState(new Date());
+
   const [seatsAvailable, setSeatsAvailable] = useState(1);
-  const [amountPerSeat, setAmountPerSeat] = useState(0);
+  const [amountPerSeat, setAmountPerSeat] = useState(totalCost / 2);
+
+  const [originName, setOriginName] = useState("");
+  const [destinationName, setDestinationName] = useState("");
+  const [imageUrl, setImageUrl] = useState(null);
+
+  useEffect(() => {
+    const fetchDetails = async () => {
+      try {
+        const storedCarRegNumber = await AsyncStorage.getItem("carRegNumber");
+
+        if (storedCarRegNumber) setCarRegNumber(storedCarRegNumber);
+      } catch (error) {
+        console.error("Error fetching driver details:", error);
+        Alert.alert("Error", "Failed to fetch driver details.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDetails();
+  }, []);
+
+  // to fetch the name of car from the prev screen
+  useEffect(() => {
+    const fetchRcModel = async () => {
+      try {
+        const model = await AsyncStorage.getItem("rc_model");
+        if (model) {
+          setRcModel(model);
+        } else {
+          Alert.alert("No RC Model Found", "Please verify your details first.");
+        }
+      } catch (error) {
+        console.error("Error retrieving rc_model:", error);
+        Alert.alert("Error", "Failed to retrieve RC Model.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRcModel();
+  }, []);
+
+  //to fetch the car image from cloudinary using rc_model
+
+  const fetchCarImage = async () => {
+    if (!rcModel) {
+      Alert.alert("Error", "RC Model is required to fetch the car image.");
+      return;
+    }
+
+    try {
+      const response = await axios.get(
+        `http://192.168.43.235:3000/search-car-image?carName=${rcModel}`
+      );
+
+      if (response.status === 200) {
+        setImageUrl(response.data.imageUrl);
+      } else {
+        Alert.alert("Error", "Failed to fetch car image.");
+      }
+    } catch (error) {
+      console.error("Error fetching car image:", error);
+      Alert.alert("Error", "Failed to fetch car image from the server.");
+    }
+  };
+
+  useEffect(() => {
+    const getLocationNames = async () => {
+      const originCoords = [origin.longitude, origin.latitude];
+      const destinationCoords = [destination.longitude, destination.latitude];
+
+      const originLocationName = await fetchLocationName(originCoords);
+      const destinationLocationName = await fetchLocationName(
+        destinationCoords
+      );
+
+      setOriginName(originLocationName);
+      setDestinationName(destinationLocationName);
+    };
+
+    getLocationNames();
+  }, [origin, destination]);
+
+  useEffect(() => {
+    const fetchUserName = async () => {
+      try {
+        const name = await AsyncStorage.getItem("userName");
+        if (name !== null) {
+          setUserName(name); // Set the user name if it exists
+        } else {
+          Alert.alert("No user found", "User name is not available.");
+        }
+      } catch (error) {
+        console.error("Failed to fetch user name:", error);
+        Alert.alert("Error", "Failed to fetch user name.");
+      }
+    };
+
+    fetchUserName();
+  }, []);
+
+  useEffect(() => {
+    console.log("Received parameters:", {
+      origin,
+      destination,
+      totalCost,
+    });
+    const getName = async () => {
+      try {
+        const storedName = await AsyncStorage.getItem("name");
+        if (storedName !== null) {
+          setName(storedName);
+          console.log("Name retrieved from AsyncStorage:", storedName); // Log the name
+        } else {
+          console.log("No name found in AsyncStorage.");
+        }
+      } catch (error) {
+        console.error("Error reading name from AsyncStorage", error);
+      }
+    };
+
+    getName();
+  }, []);
 
   const closeMenu = () => {
     Animated.timing(slideAnim, {
@@ -71,6 +203,7 @@ const MapScreen = ({ route }) => {
   useEffect(() => {
     (async () => {
       try {
+        // Request location permissions
         let { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== "granted") {
           setError("Permission to access location was denied");
@@ -78,25 +211,29 @@ const MapScreen = ({ route }) => {
           return;
         }
 
-        let location = await Location.getCurrentPositionAsync({});
-        const currentLocation = {
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
+        // Set origin and destination based on route params
+        const origin = {
+          latitude: origin.latitude,
+          longitude: origin.longitude,
         };
-        setCurrentLocation(currentLocation);
 
-        if (destination) {
-          fetchRoute(currentLocation, destination);
-        } else {
-          setError("Destination is not available");
-          setLoading(false);
-        }
+        const destination = {
+          latitude: destination.latitude,
+          longitude: destination.longitude,
+        };
+
+        // Set state for origin and destination
+        setOrigin(origin);
+        setDestination(destination);
+
+        // Fetch route between origin and destination
+        fetchRoute(origin, destination);
       } catch (err) {
         setError("Error fetching location");
         setLoading(false);
       }
     })();
-  }, [destination]);
+  }, [origin, destination]);
 
   useEffect(() => {
     const generateTimeOptions = () => {
@@ -140,7 +277,7 @@ const MapScreen = ({ route }) => {
 
   const fetchRoute = async (origin, destination) => {
     const MAPBOX_TOKEN =
-      "sk.eyJ1IjoibmV4dHJpbGxpb24tdGVjaCIsImEiOiJjbHpnaHdiaTkxb29xMmpxc3V5bTRxNWNkIn0.l4AsMHEMhAEO90klTb3oCQ"; // Replace with your token
+      "sk.eyJ1IjoibmV4dHJpbGxpb24tdGVjaCIsImEiOiJjbHpnaHdiaTkxb29xMmpxc3V5bTRxNWNkIn0.l4AsMHEMhAEO90klTb3oCQ";
     const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}?geometries=geojson&access_token=${MAPBOX_TOKEN}`;
 
     try {
@@ -175,13 +312,51 @@ const MapScreen = ({ route }) => {
   };
 
   const handleToggle = () => {
-    setCommuteRegularly((prevValue) => {
-      const newValue = !prevValue;
+    setCommuteRegularly((prevState) => {
+      const newValue = !prevState;
+      console.log("commuteRegularly after toggle:", newValue); // Log the new value
       if (newValue) {
         setYesPopupVisible(true);
       }
       return newValue;
     });
+  };
+
+  const handleToggleModal = () => {
+    setCommuteBackRegularly((prevState) => {
+      const newValue = !prevState;
+      console.log("commuteBackRegularly after toggle:", newValue); // Log the new value
+      return newValue;
+    });
+  };
+
+  const fetchLocationName = async (coordinates) => {
+    const MAPBOX_TOKEN =
+      "sk.eyJ1IjoibmV4dHJpbGxpb24tdGVjaCIsImEiOiJjbHpnaHdiaTkxb29xMmpxc3V5bTRxNWNkIn0.l4AsMHEMhAEO90klTb3oCQ";
+
+    try {
+      const response = await axios.get(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${coordinates[0]},${coordinates[1]}.json`,
+        {
+          params: {
+            access_token: MAPBOX_TOKEN,
+          },
+        }
+      );
+
+      // Extract street name from the response
+      const features = response.data.features;
+      if (features.length) {
+        const place = features[0];
+        const street = place.address || place.text; // Use address or text as a fallback
+        return street || "Street name not found";
+      }
+
+      return "Location not found";
+    } catch (error) {
+      console.error("Error fetching location name:", error);
+      return "Error fetching location";
+    }
   };
 
   const incrementSeats = () => {
@@ -202,6 +377,8 @@ const MapScreen = ({ route }) => {
     setAmountPerSeat((prev) => (prev > 10 ? prev - 10 : 10));
   };
 
+  // Continue from the existing code...
+
   const handleConfirmDetails = async () => {
     try {
       const storedUserId = await AsyncStorage.getItem("userId");
@@ -210,55 +387,109 @@ const MapScreen = ({ route }) => {
         throw new Error("User ID not found. Please log in again.");
       }
 
-      // Prepare GeoJSON format
-      const fromCoordinates = {
-        type: "Point",
-        coordinates: [currentLocation.longitude, currentLocation.latitude], // [longitude, latitude]
-      };
-      const toCoordinates = {
-        type: "Point",
-        coordinates: [destination.longitude, destination.latitude], // [longitude, latitude]
-      };
+      let dataToSend = {};
+      const formatLocation = (location) => ({
+        longitude: location.longitude, // Longitude first
+        latitude: location.latitude, // Latitude second
+      });
 
-      const dataToSend = {
-        userId: storedUserId,
-        from: currentLocation,
-        to: destination,
-        available_seat: seatsAvailable,
-        amount_per_seat: amountPerSeat,
-        shuttle: false, // Set to false for this case
-        dateDetails: {
-          date: new Date().toISOString(), // Ensure this is formatted as ISO string
-          time: formatTime(time),
-        },
-        round_trip: false, // Set to false for this case
-      };
+      if (commuteRegularly) {
+        console.log("modalCommuteRegularly is true");
+
+        if (!commuteBackRegularly) {
+          console.log("commuteBackRegularly is false");
+
+          dataToSend = {
+            driver: {
+              // 1. driver (nested object)
+              name: userName,
+              userId: storedUserId,
+            },
+            from: formatLocation(origin), // 2. from (longitude, latitude)
+            to: formatLocation(destination), // 3. to (longitude, latitude)
+            shuttle: true, // 4. shuttle
+            round_trip: false, // 5. round_trip
+            available_seat: seatsAvailable, // 6. available_seat
+            amount_per_seat: amountPerSeat, // 7. amount_per_seat
+            dateDetails: {
+              // 8. dateDetails
+              start_date: startDate,
+              end_date: endDate,
+              time: time,
+            },
+          };
+        } else {
+          console.log("commuteBackRegularly is true");
+
+          dataToSend = {
+            driver: {
+              // 1. driver (nested object)
+              name: userName,
+              userId: storedUserId,
+            },
+            from: formatLocation(origin), // 2. from (longitude, latitude)
+            to: formatLocation(destination), // 3. to (longitude, latitude)
+            shuttle: true, // 4. shuttle
+            round_trip: true, // 5. round_trip
+            available_seat: seatsAvailable, // 6. available_seat
+            amount_per_seat: amountPerSeat, // 7. amount_per_seat
+            dateDetails: {
+              // 8. dateDetails
+              start_date: startDate,
+              end_date: endDate,
+              time: time,
+              round_trip_time: time1, // Additional field for round trips
+            },
+          };
+        }
+      } else {
+        console.log("modalCommuteRegularly is false");
+
+        dataToSend = {
+          driver: {
+            // 1. driver (nested object)
+            name: userName,
+            userId: storedUserId,
+          },
+          from: formatLocation(origin), // 2. from (longitude, latitude)
+          to: formatLocation(destination), // 3. to (longitude, latitude)
+          shuttle: false, // 4. shuttle
+          round_trip: false, // 5. round_trip
+          available_seat: seatsAvailable, // 6. available_seat
+          amount_per_seat: amountPerSeat, // 7. amount_per_seat
+          dateDetails: {
+            // 8. dateDetails
+            date: new Date().toISOString(),
+            time: formatTime(time),
+          },
+        };
+      }
 
       console.log("Data being sent:", JSON.stringify(dataToSend));
 
-      // Sending the data for a one-time ride
+      // Sending the data to API
       const response = await axios.post(
-        "http://192.168.29.99:3000/create-ride",
+        "http://192.168.43.235:3000/create-ride",
         dataToSend
       );
-      console.log("Response for one-time ride:", response.data);
+      console.log("Response:", response.data);
 
-      if (!response.data.ride || !response.data.ride._id) {
-        throw new Error("Ride ID not found in the response.");
+      let rideId = null;
+      if (!commuteRegularly) {
+        rideId = response.data.rideId; // Assuming the response contains rideId
       }
 
-      const rideDetails = {
-        __id: response.data.ride._id,
-        destination: destination,
-        currentLocation: currentLocation,
-        availableSeats: seatsAvailable,
-        amountPerSeat: amountPerSeat,
-        date: new Date().toISOString(),
-        time: formatTime(time),
-      };
-
       setYesPopupVisible(false);
-      navigation.navigate("RideSuccessful", { rideDetails });
+
+      // Navigate to success screen and pass originName and destinationName
+      navigation.navigate("RideSuccessful", {
+        availableSeats: seatsAvailable,
+        amountPerSeat,
+        currentDateTime: new Date().toISOString(),
+        rideId: rideId,
+        originName: originName, // Pass originName
+        destinationName: destinationName, // Pass destinationName
+      });
     } catch (error) {
       console.error(
         "Error sending data:",
@@ -267,6 +498,9 @@ const MapScreen = ({ route }) => {
       setError("Error sending data to API");
     }
   };
+
+  // Continue with the rest of your code...
+
   // Helper function to format time to "hh:mm AM/PM"
   const formatTime = (time) => {
     const date = new Date(time);
@@ -290,20 +524,20 @@ const MapScreen = ({ route }) => {
 
   return (
     <View style={styles.container}>
-      {currentLocation && destination ? (
+      {origin && destination ? (
         <MapView
           style={styles.map}
           initialRegion={{
-            latitude: (currentLocation.latitude + destination.latitude) / 2,
-            longitude: (currentLocation.longitude + destination.longitude) / 2,
+            latitude: (origin.latitude + destination.latitude) / 2,
+            longitude: (origin.longitude + destination.longitude) / 2,
             latitudeDelta:
-              Math.abs(currentLocation.latitude - destination.latitude) * 2,
+              Math.abs(origin.latitude - destination.latitude) * 1.5,
             longitudeDelta:
-              Math.abs(currentLocation.longitude - destination.longitude) * 2,
+              Math.abs(origin.longitude - destination.longitude) * 1.5,
           }}
         >
           <Marker
-            coordinate={currentLocation}
+            coordinate={origin}
             title="You are here"
             description="Current Location"
           >
@@ -319,11 +553,13 @@ const MapScreen = ({ route }) => {
             />
           </Marker>
 
-          <Polyline
-            coordinates={routeCoords}
-            strokeWidth={3}
-            strokeColor="black"
-          />
+          {routeCoords.length > 0 && (
+            <Polyline
+              coordinates={routeCoords}
+              strokeWidth={5}
+              strokeColor="blue" // Changed to blue for better visibility
+            />
+          )}
         </MapView>
       ) : (
         <Text style={styles.errorText}>{error || "No data available"}</Text>
@@ -351,8 +587,8 @@ const MapScreen = ({ route }) => {
                 source={require("../assets/profilePic.jpg")}
                 style={styles.profileImage}
               />
-              <Text style={styles.userName}>Naina Kapoor</Text>
-              <Text style={styles.userEmail}>naina**@gmail.com</Text>
+              <Text style={styles.userName}>{userName}</Text>
+              <Text style={styles.userEmail}>email placeholder</Text>
               <View style={styles.menuOptions}>
                 <TouchableOpacity
                   onPress={() => navigation.navigate("Profile")}
@@ -410,16 +646,25 @@ const MapScreen = ({ route }) => {
               style={styles.driverAvatar}
             />
             <View>
-              <Text style={styles.driverName}>HR26EM3749 (now)</Text>
-              <Text style={styles.driverLocation}>
-                Udyog Vihar, Phase 1, 122001
-              </Text>
-              <Text style={styles.driverLocation}>Ambience Mall, Gurugram</Text>
+              <Text style={styles.driverName}>{carRegNumber}</Text>
+              <View style={styles.locationContainer}>
+                <Image
+                  source={require("../assets/from_icon.png")}
+                  style={styles.icon}
+                />
+                <Text style={styles.driverLocation}>{originName}</Text>
+              </View>
+              <View style={styles.locationContainer}>
+                <Image
+                  source={require("../assets/to_icon.png")}
+                  style={styles.icon}
+                />
+                <Text style={styles.driverLocation}>{destinationName}</Text>
+              </View>
             </View>
-            <Image
-              source={require("../assets/driver_car.png")}
-              style={styles.carImage}
-            />
+            {imageUrl && (
+              <Image source={{ uri: imageUrl }} style={styles.carImage} />
+            )}
           </View>
           <View style={styles.horizontalRuler} />
           <View style={styles.detailsRow}>
@@ -459,7 +704,7 @@ const MapScreen = ({ route }) => {
               >
                 <Text style={styles.seatButtonText}>-</Text>
               </TouchableOpacity>
-              <Text style={styles.detailsValue}>₹{amountPerSeat}.00</Text>
+              <Text style={styles.detailsValue}>₹{amountPerSeat}</Text>
               <TouchableOpacity
                 onPress={incrementAmount}
                 style={styles.seatButton}
@@ -535,11 +780,22 @@ const MapScreen = ({ route }) => {
             {/* Date Range Selection */}
             <View style={styles.dropdownContainer}>
               <Text style={styles.selectLabel}>Start Date</Text>
-              <TouchableOpacity onPress={() => setShowStartDatePicker(true)}>
-                <Text style={styles.selectedWeekText}>
+              <TouchableOpacity
+                onPress={() => setShowStartDatePicker(true)}
+                style={styles.datePickerContainer}
+              >
+                <Image
+                  source={require("../assets/clock.png")}
+                  style={styles.icon_clock}
+                />
+                <Text style={styles.selectedWeekText1}>
                   {`${formatDate(startDate)}`}
                   {"\n"}
                 </Text>
+                <Image
+                  source={require("../assets/dropdown.png")}
+                  style={styles.icon_dropdown}
+                />
               </TouchableOpacity>
               {showStartDatePicker && (
                 <DateTimePicker
@@ -556,11 +812,22 @@ const MapScreen = ({ route }) => {
               )}
 
               <Text style={styles.selectLabel}>End Date</Text>
-              <TouchableOpacity onPress={() => setShowEndDatePicker(true)}>
-                <Text style={styles.selectedWeekText}>
+              <TouchableOpacity
+                onPress={() => setShowEndDatePicker(true)}
+                style={styles.datePickerContainer}
+              >
+                <Image
+                  source={require("../assets/clock.png")}
+                  style={styles.icon_clock}
+                />
+                <Text style={styles.selectedWeekText1}>
                   {`${formatDate(endDate)}`}
                   {"\n"}
                 </Text>
+                <Image
+                  source={require("../assets/clock.png")}
+                  style={styles.icon_dropdown}
+                />
               </TouchableOpacity>
               {showEndDatePicker && (
                 <DateTimePicker
@@ -577,10 +844,18 @@ const MapScreen = ({ route }) => {
               )}
 
               <Text style={styles.selectLabel}>Select Time</Text>
-              <TouchableOpacity onPress={() => setShowTimePicker(true)}>
-                <Text style={styles.selectedWeekText}>
+              <TouchableOpacity
+                onPress={() => setShowTimePicker(true)}
+                style={styles.datePickerContainer}
+              >
+                <Image source="../assets/clock.png" style={styles.icon_clock} />
+                <Text style={styles.selectedTimeText1}>
                   {selectedTime || "Select a time"}
                 </Text>
+                <Image
+                  source="../assets/clock.png"
+                  style={styles.icon_dropdown}
+                />
               </TouchableOpacity>
               {showTimePicker && (
                 <DateTimePicker
@@ -596,87 +871,113 @@ const MapScreen = ({ route }) => {
                   }}
                 />
               )}
-            </View>
-
-            {/* Toggle for Commute Regularly */}
-            <View style={styles.detailsRow}>
-              <Text style={styles.detailsLabel1}>
-                Do you commute to this destination regularly?
-              </Text>
-              <TouchableOpacity
-                style={styles.toggleContainer}
-                onPress={handleToggle}
-              >
-                <View style={styles.ovalShape}>
-                  <View style={styles.textContainer}>
+              <View style={styles.detailsRow}>
+                <Text
+                  style={[
+                    styles.detailsLabel1,
+                    { marginTop: 18 },
+                    { marginBottom: 18 },
+                    { marginLeft: 1 },
+                  ]}
+                >
+                  Do you make the commute back from the same destination
+                  regularly?
+                </Text>
+                <TouchableOpacity
+                  style={styles.toggleContainer}
+                  onPress={handleToggleModal}
+                >
+                  <View
+                    style={
+                      commuteBackRegularly
+                        ? styles.yes_ovalShape
+                        : styles.ovalShape
+                    }
+                  >
                     <View style={styles.textContainer}>
-                      <Text style={styles.toggleText}>
-                        {commuteRegularly ? "Yes" : ""}
-                      </Text>
-                      <Text style={styles.toggleText}>
-                        {commuteRegularly ? "" : "No"}
-                      </Text>
+                      <View style={styles.textContainer}>
+                        <Text style={styles.toggleText}>
+                          {commuteBackRegularly ? "Yes" : ""}
+                        </Text>
+                        <Text style={styles.toggleText}>
+                          {commuteBackRegularly ? "" : "No"}
+                        </Text>
+                      </View>
                     </View>
+
+                    <View
+                      style={[
+                        styles.toggleCircle,
+                        {
+                          backgroundColor: "#FFFFFF", // Always white
+                          transform: [
+                            {
+                              translateX: commuteBackRegularly ? 30 : 0, // Move the toggle
+                            },
+                          ],
+                        },
+                      ]}
+                    />
+                  </View>
+                </TouchableOpacity>
+              </View>
+              {commuteBackRegularly && (
+                <>
+                  <Text style={styles.selectLabel}>Select Date Range</Text>
+
+                  {/* Date Range Display when Toggle is Yes */}
+                  <View style={styles.dateRangeContainer}>
+                    <Image
+                      source={require("../assets/clock.png")}
+                      style={styles.icon_clock}
+                    />
+                    <Text style={styles.dateRangeText1}>
+                      {`${formatDate(startDate)} - ${formatDate(endDate)}`}
+                    </Text>
                   </View>
 
-                  <View
-                    style={[
-                      styles.toggleCircle,
-                      {
-                        backgroundColor: "#FFFFFF", // Always white
-                        transform: [
-                          {
-                            translateX: commuteRegularly ? 30 : 0, // Move the toggle
-                          },
-                        ],
-                      },
-                    ]}
-                  />
-                </View>
+                  <Text style={styles.selectLabel1}>Select Time</Text>
+                  <TouchableOpacity
+                    onPress={() => setShowTimePicker(true)}
+                    style={styles.dateTimeContainer}
+                  >
+                    <Image
+                      source={require("../assets/clock.png")}
+                      style={styles.icon_clock}
+                    />
+                    <Text style={styles.selectedTimeText1}>
+                      {selectedTime || "Select a time"}
+                    </Text>
+                  </TouchableOpacity>
+                  {showTimePicker && (
+                    <DateTimePicker
+                      value={time}
+                      mode="time"
+                      display="default"
+                      onChange={(event, selectedTime) => {
+                        if (event.type === "set" && selectedTime) {
+                          setTime(selectedTime); // Update time state with selected time
+                          setSelectedTime(formatTime(selectedTime)); // Format and set selected time
+                        }
+                        setShowTimePicker(false); // Close the time picker
+                      }}
+                    />
+                  )}
+                </>
+              )}
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setYesPopupVisible(false)}
+              >
+                <Text style={styles.closeButtonText}>
+                  Yes! Make It A Shuttle
+                </Text>
               </TouchableOpacity>
             </View>
 
+            {/* Toggle for Commute Regularly */}
+
             {/* Show additional options only if commuteRegularly is true */}
-            {commuteRegularly && (
-              <>
-                <Text style={styles.selectLabel}>Select Date Range</Text>
-
-                {/* Date Range Display when Toggle is Yes */}
-                <View style={styles.dateRangeContainer}>
-                  <Text style={styles.dateRangeText1}>
-                    {`${formatDate(startDate)} - ${formatDate(endDate)}`}
-                  </Text>
-                </View>
-
-                <Text style={styles.selectLabel1}>Select Time</Text>
-                <TouchableOpacity onPress={() => setShowTimePicker(true)}>
-                  <Text style={styles.selectedWeekText1}>
-                    {selectedTime || "Select a time"}
-                  </Text>
-                </TouchableOpacity>
-                {showTimePicker && (
-                  <DateTimePicker
-                    value={time}
-                    mode="time"
-                    display="default"
-                    onChange={(event, selectedTime) => {
-                      if (event.type === "set" && selectedTime) {
-                        setTime(selectedTime); // Update time state with selected time
-                        setSelectedTime(formatTime(selectedTime)); // Format and set selected time
-                      }
-                      setShowTimePicker(false); // Close the time picker
-                    }}
-                  />
-                )}
-              </>
-            )}
-
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setYesPopupVisible(false)}
-            >
-              <Text style={styles.closeButtonText}>Yes! Make It A Shuttle</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -685,6 +986,119 @@ const MapScreen = ({ route }) => {
 };
 
 const styles = StyleSheet.create({
+  dateRangeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 4,
+    height: 50,
+    width: "95%",
+    backgroundColor: "#ffffff", // Background color
+    borderRadius: 7, // Rounded corners
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
+  dateTimeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 4,
+    height: 50,
+    width: "95%",
+    backgroundColor: "#ffffff", // Background color
+    borderRadius: 7, // Rounded corners
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
+  icon_dropdown: {
+    width: 16, // Adjust size as needed
+    height: 16,
+    marginLeft: 120,
+  },
+  icon_clock: {
+    width: 20, // Adjust size as needed
+    height: 20,
+    marginLeft: 7,
+  },
+  datePickerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 4,
+    height: 50,
+    width: "95%",
+    backgroundColor: "#ffffff", // Background color
+    borderRadius: 7, // Rounded corners
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
+  selectLabel: {
+    fontSize: 16,
+    marginBottom: 10,
+    color: "#7C7C7C",
+    alignSelf: "flex-start", // Left align the text
+  },
+  closeButton: {
+    backgroundColor: "black",
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    marginTop: 25,
+    width: "80%",
+    marginLeft: "10%",
+    alignItems: "center",
+    borderRadius: 5,
+  },
+  selectedWeekText1: {
+    color: "#000000",
+    marginHorizontal: 19,
+    textAlign: "center",
+    marginTop: 9,
+  },
+  selectedTimeText1: {
+    color: "#000000",
+    marginHorizontal: 15,
+    textAlign: "center",
+    marginTop: 3,
+    marginLeft: 20,
+  },
+  closeButtonText: {
+    color: "white",
+    fontFamily: "poppins",
+    fontSize: 16,
+  },
+
+  dateTimeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 4,
+    height: 50,
+    width: "95%",
+    backgroundColor: "#ffffff", // Background color
+    borderRadius: 7, // Rounded corners
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
+  yes_ovalShape: {
+    backgroundColor: "#000000",
+    borderRadius: 25,
+    height: 30,
+    width: 60,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 5,
+  },
+
+  locationContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 5,
+  },
+  icon: {
+    width: 10, // Set your desired width
+    height: 10, // Set your desired height
+    marginRight: 5, // Space between icon and text
+  },
+  driverLocation: {
+    fontSize: 16, // Adjust as needed
+  },
   container: {
     flex: 1,
     justifyContent: "center",
@@ -695,6 +1109,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "rgba(0, 0, 0, 0.7)",
+    width: "100%",
   },
   popup: {
     width: "90%",

@@ -10,6 +10,8 @@ import ChooseRoleScreen from "./components/ChooseRoleScreen";
 import TravellerWelcome from "./components/TravellerWelcome";
 import DriverWelcome from "./components/DriverWelcome";
 import DriverLogin from "./components/DriverLogin";
+import SelectTimeScreen from "./components/SelectTimeScreen";
+
 import DriverSignup from "./components/DriverSignup";
 import DriverVerification from "./components/DriverVerification";
 import HomeScreen from "./components/HomeScreen";
@@ -81,6 +83,12 @@ function App() {
         <Stack.Screen
           name="HomeScreen"
           component={HomeScreen}
+          options={{ headerShown: false }}
+        />
+
+        <Stack.Screen
+          name="SelectTimeScreen"
+          component={SelectTimeScreen}
           options={{ headerShown: false }}
         />
         <Stack.Screen

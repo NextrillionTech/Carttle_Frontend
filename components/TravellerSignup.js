@@ -61,7 +61,7 @@ const TravellerSignup = () => {
 
     try {
       const response = await fetch(
-        "http://192.168.43.235:3000/auth/api/signup",
+        "http://192.168.43.138:3000/auth/api/signup",
         {
           method: "POST",
           headers: {

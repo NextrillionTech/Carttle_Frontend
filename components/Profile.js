@@ -9,6 +9,7 @@ import {
   PermissionsAndroid,
   Animated,
   Platform,
+  Linking,
   TextInput,
   TouchableWithoutFeedback,
   ScrollView,
@@ -40,6 +41,12 @@ export default function Profile() {
   const [dlnumber, setDlnumber] = useState(null);
   const [carRegNumber, setCarRegNumber] = useState(null);
   const [dob, setDob] = useState(null);
+  const handleOpenWebsite = () => {
+    const url = "https://nextrilliontech.infinityfreeapp.com/";
+    Linking.openURL(url).catch((err) =>
+      console.error("Failed to open URL:", err)
+    );
+  };
 
   const navigation = useNavigation();
 
@@ -374,7 +381,6 @@ export default function Profile() {
                 style={styles.profileImage}
               />
               <Text style={styles.userName}>{userName}</Text>
-              <Text style={styles.userEmail}>email placeholder</Text>
               <View style={styles.menuOptions}>
                 <TouchableOpacity
                   onPress={() => navigation.navigate("Profile")}
@@ -383,10 +389,9 @@ export default function Profile() {
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
                 <TouchableOpacity>
-                  <Text style={styles.menuOptionText}>Trip History</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={handleOpenWebsite}>
                   <Text style={styles.menuOptionText}>About</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>

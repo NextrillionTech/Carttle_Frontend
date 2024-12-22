@@ -19,6 +19,7 @@ import MapView, { Marker, Polyline } from "react-native-maps";
 import * as Location from "expo-location";
 import axios from "axios";
 import DateTimePicker from "@react-native-community/datetimepicker";
+
 import { Picker } from "@react-native-picker/picker";
 import BottomNav from "./BottomNav";
 
@@ -40,6 +41,8 @@ const MapScreen = ({ route }) => {
   const [carRegNumber, setCarRegNumber] = useState(null);
 
   const [name, setName] = useState("");
+
+  const [storedTime, setStoredTime] = useState("");
 
   const [userName, setUserName] = useState("");
 
@@ -64,11 +67,36 @@ const MapScreen = ({ route }) => {
   const [time1, setTime1] = useState(new Date());
 
   const [seatsAvailable, setSeatsAvailable] = useState(1);
-  const [amountPerSeat, setAmountPerSeat] = useState(totalCost / 2);
+  const [amountPerSeat, setAmountPerSeat] = useState(totalCost - 10);
 
   const [originName, setOriginName] = useState("");
   const [destinationName, setDestinationName] = useState("");
   const [imageUrl, setImageUrl] = useState(null);
+  const handleOpenWebsite = () => {
+    const url = "https://nextrilliontech.infinityfreeapp.com/";
+    Linking.openURL(url).catch((err) =>
+      console.error("Failed to open URL:", err)
+    );
+  };
+
+  useEffect(() => {
+    const getSelectedTime = async () => {
+      try {
+        const time = await AsyncStorage.getItem("selectedTime");
+        if (time !== null) {
+          setSelectedTime(time);
+          console.log("Retrieved time from AsyncStorage:", time);
+        } else {
+          Alert.alert("No time selected", "No time has been set.");
+        }
+      } catch (error) {
+        console.error("Failed to fetch selected time:", error);
+        Alert.alert("Error", "Failed to fetch selected time.");
+      }
+    };
+
+    getSelectedTime();
+  }, []);
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -383,6 +411,8 @@ const MapScreen = ({ route }) => {
     try {
       const storedUserId = await AsyncStorage.getItem("userId");
 
+      const selectedTime = await AsyncStorage.getItem("selectedTime");
+
       if (!storedUserId) {
         throw new Error("User ID not found. Please log in again.");
       }
@@ -392,12 +422,58 @@ const MapScreen = ({ route }) => {
         longitude: location.longitude, // Longitude first
         latitude: location.latitude, // Latitude second
       });
+      if (selectedTime === "Now") {
+        if (commuteRegularly) {
+          console.log("modalCommuteRegularly is true");
 
-      if (commuteRegularly) {
-        console.log("modalCommuteRegularly is true");
+          if (!commuteBackRegularly) {
+            console.log("commuteBackRegularly is false");
 
-        if (!commuteBackRegularly) {
-          console.log("commuteBackRegularly is false");
+            dataToSend = {
+              driver: {
+                // 1. driver (nested object)
+                name: userName,
+                userId: storedUserId,
+              },
+              from: formatLocation(origin), // 2. from (longitude, latitude)
+              to: formatLocation(destination), // 3. to (longitude, latitude)
+              shuttle: true, // 4. shuttle
+              round_trip: false, // 5. round_trip
+              available_seat: seatsAvailable, // 6. available_seat
+              amount_per_seat: amountPerSeat, // 7. amount_per_seat
+              dateDetails: {
+                // 8. dateDetails
+                start_date: startDate,
+                end_date: endDate,
+                time: time,
+              },
+            };
+          } else {
+            console.log("commuteBackRegularly is true");
+
+            dataToSend = {
+              driver: {
+                // 1. driver (nested object)
+                name: userName,
+                userId: storedUserId,
+              },
+              from: formatLocation(origin), // 2. from (longitude, latitude)
+              to: formatLocation(destination), // 3. to (longitude, latitude)
+              shuttle: true, // 4. shuttle
+              round_trip: true, // 5. round_trip
+              available_seat: seatsAvailable, // 6. available_seat
+              amount_per_seat: amountPerSeat, // 7. amount_per_seat
+              dateDetails: {
+                // 8. dateDetails
+                start_date: startDate,
+                end_date: endDate,
+                time: time,
+                round_trip_time: time1, // Additional field for round trips
+              },
+            };
+          }
+        } else {
+          console.log("modalCommuteRegularly is false");
 
           dataToSend = {
             driver: {
@@ -407,62 +483,17 @@ const MapScreen = ({ route }) => {
             },
             from: formatLocation(origin), // 2. from (longitude, latitude)
             to: formatLocation(destination), // 3. to (longitude, latitude)
-            shuttle: true, // 4. shuttle
+            shuttle: false, // 4. shuttle
             round_trip: false, // 5. round_trip
             available_seat: seatsAvailable, // 6. available_seat
             amount_per_seat: amountPerSeat, // 7. amount_per_seat
             dateDetails: {
               // 8. dateDetails
-              start_date: startDate,
-              end_date: endDate,
-              time: time,
-            },
-          };
-        } else {
-          console.log("commuteBackRegularly is true");
-
-          dataToSend = {
-            driver: {
-              // 1. driver (nested object)
-              name: userName,
-              userId: storedUserId,
-            },
-            from: formatLocation(origin), // 2. from (longitude, latitude)
-            to: formatLocation(destination), // 3. to (longitude, latitude)
-            shuttle: true, // 4. shuttle
-            round_trip: true, // 5. round_trip
-            available_seat: seatsAvailable, // 6. available_seat
-            amount_per_seat: amountPerSeat, // 7. amount_per_seat
-            dateDetails: {
-              // 8. dateDetails
-              start_date: startDate,
-              end_date: endDate,
-              time: time,
-              round_trip_time: time1, // Additional field for round trips
+              date: new Date().toISOString(),
+              time: formatTime(time),
             },
           };
         }
-      } else {
-        console.log("modalCommuteRegularly is false");
-
-        dataToSend = {
-          driver: {
-            // 1. driver (nested object)
-            name: userName,
-            userId: storedUserId,
-          },
-          from: formatLocation(origin), // 2. from (longitude, latitude)
-          to: formatLocation(destination), // 3. to (longitude, latitude)
-          shuttle: false, // 4. shuttle
-          round_trip: false, // 5. round_trip
-          available_seat: seatsAvailable, // 6. available_seat
-          amount_per_seat: amountPerSeat, // 7. amount_per_seat
-          dateDetails: {
-            // 8. dateDetails
-            date: new Date().toISOString(),
-            time: formatTime(time),
-          },
-        };
       }
 
       console.log("Data being sent:", JSON.stringify(dataToSend));
@@ -588,7 +619,6 @@ const MapScreen = ({ route }) => {
                 style={styles.profileImage}
               />
               <Text style={styles.userName}>{userName}</Text>
-              <Text style={styles.userEmail}>email placeholder</Text>
               <View style={styles.menuOptions}>
                 <TouchableOpacity
                   onPress={() => navigation.navigate("Profile")}
@@ -597,16 +627,9 @@ const MapScreen = ({ route }) => {
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
                 <TouchableOpacity>
-                  <Text style={styles.menuOptionText}>Trip History</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() =>
-                    Linking.openURL(
-                      "https://nextrilliontech.infinityfreeapp.com"
-                    )
-                  }
-                >
+                <TouchableOpacity onPress={handleOpenWebsite}>
                   <Text style={styles.menuOptionText}>About</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
@@ -646,7 +669,9 @@ const MapScreen = ({ route }) => {
               style={styles.driverAvatar}
             />
             <View>
-              <Text style={styles.driverName}>{carRegNumber}</Text>
+              <Text style={styles.driverName}>
+                {carRegNumber} ({selectedTime})
+              </Text>
               <View style={styles.locationContainer}>
                 <Image
                   source={require("../assets/from_icon.png")}
@@ -662,9 +687,6 @@ const MapScreen = ({ route }) => {
                 <Text style={styles.driverLocation}>{destinationName}</Text>
               </View>
             </View>
-            {imageUrl && (
-              <Image source={{ uri: imageUrl }} style={styles.carImage} />
-            )}
           </View>
           <View style={styles.horizontalRuler} />
           <View style={styles.detailsRow}>

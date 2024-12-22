@@ -28,15 +28,54 @@ const TravellerLogin = () => {
   };
 
   const handleSignUp = () => {
-    navigation.navigate("TravellerSignUp");
+    navigation.navigate("DriverSignUp");
   };
 
   const handleLogin = async () => {
-    navigation.navigate("TravellerHomeScreen");
+    if (!phoneNumber || !password) {
+      alert("Please enter both phone number and password.");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        "http://192.168.43.235:3000/auth/api/signin",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            phonenumber: phoneNumber,
+            password: password,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert("Login successful!");
+
+        // Store user ID in AsyncStorage
+        await AsyncStorage.setItem("userId", data._id); // Assuming data._id is the user ID
+
+        // Retrieve and log the user ID to check if it's stored
+        const storedUserId = await AsyncStorage.getItem("userId");
+        console.log("Stored User ID:", storedUserId);
+
+        navigation.navigate("TravellerHomeScreen"); // Navigate to home screen after login
+      } else {
+        alert(data.msg || "Invalid credentials, please try again.");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Failed to log in. Please try again.");
+    }
   };
 
   const handleSignupPress = () => {
-    navigation.navigate("TravellerSignup");
+    navigation.navigate("DriverSignup");
   };
 
   return (

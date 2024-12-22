@@ -10,6 +10,7 @@ import {
   Animated,
   TextInput,
   Modal,
+  ScrollView,
   FlatList,
   setLoading,
   TouchableWithoutFeedback,
@@ -21,7 +22,15 @@ import * as Location from "expo-location";
 import axios from "axios";
 import BottomNav from "./BottomNav";
 import * as Font from "expo-font";
+import { Linking } from "react-native";
+
 import AsyncStorage from "@react-native-async-storage/async-storage"; // Import sAsyncStorage
+const handleOpenWebsite = () => {
+  const url = "https://nextrilliontech.infinityfreeapp.com/";
+  Linking.openURL(url).catch((err) =>
+    console.error("Failed to open URL:", err)
+  );
+};
 
 const fetchFonts = () => {
   return Font.loadAsync({
@@ -42,13 +51,20 @@ const HomeScreen = ({ navigation }) => {
   const [selectedTime, setSelectedTime] = useState("Now");
   const [userName, setUserName] = useState("");
 
-  const [modalVisible, setModalVisible] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false); //MODAL FOR SELECTING SCREEN FOR DIFFERENT ORIGIN AND DEST
+
+  const [modalSecondVisible, setModalSecondVisible] = useState(false); //MODAL FOR SELECTING SCREEN FOR current ORIGIN AND DEST
   const [searchQuery1, setSearchQuery1] = useState("");
 
   const [searchQuery2, setSearchQuery2] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [fontLoaded, setFontLoaded] = useState(false);
   const [isMenuVisible, setMenuVisible] = useState(false);
+
+  const [currentAddress, setCurrentAddress] = useState("Fetching address...");
+  const [currentLocLatitude, setCurrentLocLatitude] = useState(null);
+  const [currentLocLongitude, setCurrentLocLongitude] = useState(null);
+
   const [placeName, setPlaceName] = useState("Fetching current location...");
   const [dropdownPosition, setDropdownPosition] = useState(null);
   const [destinationCoordinates, setDestinationCoordinates] = useState(null);
@@ -56,6 +72,31 @@ const HomeScreen = ({ navigation }) => {
   const [stateName, setStateName] = useState(""); // Use state instead of a simple variable
 
   const [originCoordinates, setOriginCoordinates] = useState(null); // Add this to track the origin
+
+  useEffect(() => {
+    if (modalSecondVisible && userLocation) {
+      fetchCurrentAddress();
+    }
+  }, [modalSecondVisible]);
+
+  const fetchCurrentAddress = async () => {
+    try {
+      const response = await axios.get(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${userLocation.longitude},${userLocation.latitude}.json?access_token=sk.eyJ1IjoibmV4dHJpbGxpb24tdGVjaCIsImEiOiJjbHpnaHdiaTkxb29xMmpxc3V5bTRxNWNkIn0.l4AsMHEMhAEO90klTb3oCQ`
+      );
+      const address =
+        response.data.features[0]?.place_name || "Unable to fetch address";
+
+      // Store the latitude and longitude as currentLocLatitude and currentLocLongitude
+      setCurrentLocLatitude(userLocation.latitude);
+      setCurrentLocLongitude(userLocation.longitude);
+
+      setCurrentAddress(address);
+    } catch (error) {
+      console.error("Error fetching current location address:", error.message);
+      setCurrentAddress("Unable to fetch address");
+    }
+  };
 
   const formatStateName = (contextArray) => {
     const stateInfo = contextArray.find((context) =>
@@ -200,9 +241,18 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
-  const selectTime = (time) => {
+  const selectTime = async (time) => {
     setSelectedTime(time);
     setShowRadioButtons(false);
+    if (time === "Now") {
+      // Store 'Now' in AsyncStorage
+      try {
+        await AsyncStorage.setItem("selectedTime", time);
+        console.log("Stored 'Now' in AsyncStorage");
+      } catch (error) {
+        console.error("Failed to store time:", error);
+      }
+    }
 
     // Navigate to the desired screen with the selected time as a parameter
     navigation.navigate("SelectTimeScreen", { selectedTime: time });
@@ -210,6 +260,9 @@ const HomeScreen = ({ navigation }) => {
 
   const openSearchModal = () => {
     setModalVisible(true);
+  };
+  const openSecondSearchModal = () => {
+    setModalSecondVisible(true);
   };
 
   const handleSearch1 = async (query) => {
@@ -355,6 +408,83 @@ const HomeScreen = ({ navigation }) => {
       }
     }
   };
+  const selectSuggestion2 = async (suggestion) => {
+    const destinationCoordinates = {
+      latitude: suggestion.geometry.coordinates[1],
+      longitude: suggestion.geometry.coordinates[0],
+    };
+
+    // Update the destination search query and coordinates
+    setSearchQuery2(suggestion.place_name); // Update destination search query
+    setDestinationCoordinates(destinationCoordinates); // Set the destination coordinates
+
+    console.log("Destination Selected:", suggestion.place_name); // Log destination
+    await AsyncStorage.setItem("destinationName", suggestion.place_name);
+
+    // Close the modal and proceed only if destination is selected
+    setModalSecondVisible(false);
+
+    const data = {
+      origin: `${currentLocLatitude},${currentLocLongitude}`, // Origin from current location variables
+      destination: `${destinationCoordinates.latitude},${destinationCoordinates.longitude}`,
+      state: stateName, // Ensure this is set correctly
+    };
+
+    console.log("State Name:", stateName);
+
+    try {
+      // Call the distance matrix API
+      const response = await axios.post(
+        "http://192.168.43.235:3000/distanceMatrix",
+        data
+      );
+      console.log("Distance:", response.data.distance);
+
+      // Call the cost calculator API
+      const costResponse = await axios.post(
+        "http://192.168.43.235:3000/calculate-cost",
+        {
+          state: stateName,
+          origin: `${currentLocLatitude},${currentLocLongitude}`, // Use origin from current location variables
+          destination: `${destinationCoordinates.latitude},${destinationCoordinates.longitude}`,
+        }
+      );
+
+      console.log("Fuel Price:", costResponse.data.fuelPrice);
+      console.log("Total Distance:", costResponse.data.distance);
+      console.log("Total Cost:", costResponse.data.totalCost);
+
+      // Navigate to MapScreen with the required data
+      navigation.navigate("MapScreen", {
+        destination: destinationCoordinates,
+        origin: {
+          latitude: currentLocLatitude,
+          longitude: currentLocLongitude,
+        },
+        distance: response.data.distance,
+        totalCost: costResponse.data.totalCost,
+      });
+      console.log("Data sent to MapScreen:", {
+        destination: destinationCoordinates,
+        origin: {
+          latitude: currentLocLatitude,
+          longitude: currentLocLongitude,
+        },
+        distance: costResponse.data.distance,
+        totalCost: costResponse.data.totalCost,
+      });
+    } catch (error) {
+      console.error(
+        "Error sending data to backend:",
+        error.response ? error.response.data : error.message
+      );
+      Alert.alert(
+        "Error",
+        "Could not calculate distance and cost, please try again."
+      );
+    }
+  };
+
   if (errorMsg) {
     return (
       <View style={styles.errorContainer}>
@@ -375,14 +505,12 @@ const HomeScreen = ({ navigation }) => {
           </Marker>
         )}
       </MapView>
-
       <TouchableOpacity onPress={toggleMenu}>
         <Image
           source={require("../assets/nav_icon.png")}
           style={[styles.icon, styles.menuIcon]}
         />
       </TouchableOpacity>
-
       {isMenuVisible && (
         <TouchableWithoutFeedback onPress={closeMenu}>
           <Animated.View
@@ -399,7 +527,6 @@ const HomeScreen = ({ navigation }) => {
                 style={styles.profileImage}
               />
               <Text style={styles.userName}>{userName}</Text>
-              <Text style={styles.userEmail}>email placeholder</Text>
               <View style={styles.menuOptions}>
                 <TouchableOpacity
                   onPress={() => navigation.navigate("Profile")}
@@ -408,10 +535,9 @@ const HomeScreen = ({ navigation }) => {
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
                 <TouchableOpacity>
-                  <Text style={styles.menuOptionText}>Trip History</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={handleOpenWebsite}>
                   <Text style={styles.menuOptionText}>About</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
@@ -445,7 +571,6 @@ const HomeScreen = ({ navigation }) => {
         source={require("../assets/locateMe_icon.png")}
         style={[styles.icon, styles.locationIcon]}
       />
-
       <View style={styles.overlayContainer}>
         <Text style={styles.heading}>Where To Take Next?</Text>
         <View style={styles.horizontalLine} />
@@ -466,7 +591,10 @@ const HomeScreen = ({ navigation }) => {
             />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.optionButtonLarge}>
+          <TouchableOpacity
+            style={styles.optionButtonLarge}
+            onPress={openSecondSearchModal}
+          >
             <Image
               source={require("../assets/current_location.png")}
               style={styles.optionIcon}
@@ -485,11 +613,9 @@ const HomeScreen = ({ navigation }) => {
           <Text style={styles.destinationText}>Select Destination</Text>
         </TouchableOpacity>
       </View>
-
       <View style={styles.bottomNav}>
         <BottomNav activeTab={activeTab} onTabPress={handleTabPress} />
       </View>
-
       {showRadioButtons && dropdownPosition && (
         <View
           style={[
@@ -500,6 +626,7 @@ const HomeScreen = ({ navigation }) => {
           {renderRadioButton("Now")}
           {renderRadioButton("Later")}
           {renderRadioButton("Tomorrow")}
+          {renderRadioButton("Custom Date")}
         </View>
       )}
       <Modal visible={modalVisible} animationType="slide" transparent={true}>
@@ -547,6 +674,72 @@ const HomeScreen = ({ navigation }) => {
                 </TouchableOpacity>
               )}
             />
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      <Modal
+        visible={modalSecondVisible}
+        animationType="slide"
+        transparent={true}
+      >
+        <TouchableWithoutFeedback
+          onPress={() => {
+            setModalSecondVisible(false); // Close the modal on outside touch
+            Keyboard.dismiss(); // Dismiss the keyboard if it's open
+          }}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.horizontalRuler1} />
+            <Text style={styles.heading}>Select address</Text>
+            <View style={styles.horizontalRuler} />
+
+            {/* Display Current Address in First Input Box */}
+            <View style={styles.searchContainer}>
+              <ScrollView
+                horizontal={true}
+                showsHorizontalScrollIndicator={false}
+              >
+                <Text
+                  style={{
+                    color: "black",
+                    fontSize: 13,
+                    fontFamily: "poppins",
+                  }}
+                >
+                  {currentAddress}
+                </Text>
+              </ScrollView>
+            </View>
+
+            <View style={styles.searchContainer}>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Select Destination"
+                value={searchQuery2}
+                onChangeText={(query) => handleSearch2(query)} // Fetch suggestions dynamically
+              />
+            </View>
+
+            {/* Suggestions for Destination */}
+            {suggestions.length > 0 ? (
+              <FlatList
+                data={suggestions}
+                keyExtractor={(item) => item.id || item.place_name}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.suggestionItem}
+                    onPress={() => selectSuggestion2(item)}
+                  >
+                    <Text style={styles.suggestionText}>{item.place_name}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            ) : (
+              <Text style={styles.noSuggestionsText}>
+                No suggestions available.
+              </Text>
+            )}
           </View>
         </TouchableWithoutFeedback>
       </Modal>
@@ -771,15 +964,6 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: "white",
   },
-  radioButtonsContainer: {
-    position: "absolute",
-    bottom: 70,
-    left: 0,
-    backgroundColor: "white",
-    borderTopWidth: 1,
-    borderTopColor: "#d3d3d3",
-    padding: 10,
-  },
   radioButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -844,6 +1028,7 @@ const styles = StyleSheet.create({
     fontFamily: "poppins",
     marginLeft: 10,
     marginRight: 20,
+    color: "black",
   },
   suggestionItem: {
     padding: 10,
@@ -883,21 +1068,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "poppins",
   },
-  radioButtonsContainer: {
-    position: "absolute",
-    top: "30%",
-    left: "10%",
-    right: "10%",
-    backgroundColor: "white",
-    padding: 20,
-    borderRadius: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.8,
-    shadowRadius: 2,
-    fontFamily: "poppins",
-    elevation: 5,
-  },
+
   radioButtonContainer: {
     flexDirection: "row",
     alignItems: "center",

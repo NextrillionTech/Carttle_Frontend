@@ -18,6 +18,8 @@ import MapView, { Marker, UrlTile } from "react-native-maps";
 import * as Location from "expo-location";
 import axios from "axios";
 import BottomNav from "./BottomNav";
+import AsyncStorage from "@react-native-async-storage/async-storage"; // Import sAsyncStorage
+
 import * as Font from "expo-font";
 
 const fetchFonts = () => {
@@ -37,10 +39,9 @@ const TravellerHomeScreen = ({ navigation }) => {
   const [activeTab, setActiveTab] = useState("home");
   const [showRadioButtons, setShowRadioButtons] = useState(false);
   const [selectedTime, setSelectedTime] = useState("Now");
-  const [modalVisible, setModalVisible] = useState(false);
-
   const [userName, setUserName] = useState("");
 
+  const [modalVisible, setModalVisible] = useState(false);
   const [searchQuery1, setSearchQuery1] = useState("");
 
   const [searchQuery2, setSearchQuery2] = useState("");
@@ -52,26 +53,6 @@ const TravellerHomeScreen = ({ navigation }) => {
   const [destinationCoordinates, setDestinationCoordinates] = useState(null);
   const slideAnim = useRef(new Animated.Value(-300)).current; // Start off-screen
   const [stateName, setStateName] = useState(""); // Use state instead of a simple variable
-
-  const [originCoordinates, setOriginCoordinates] = useState(null); // Add this to track the origin
-
-  useEffect(() => {
-    const fetchUserName = async () => {
-      try {
-        const name = await AsyncStorage.getItem("userName");
-        if (name !== null) {
-          setUserName(name); // Set the user name if it exists
-        } else {
-          Alert.alert("No user found", "User name is not available.");
-        }
-      } catch (error) {
-        console.error("Failed to fetch user name:", error);
-        Alert.alert("Error", "Failed to fetch user name.");
-      }
-    };
-
-    fetchUserName();
-  }, []);
 
   const formatStateName = (contextArray) => {
     const stateInfo = contextArray.find((context) =>
@@ -274,83 +255,39 @@ const TravellerHomeScreen = ({ navigation }) => {
   );
 
   const selectSuggestion = async (suggestion, isOriginBoxActive) => {
-    const destinationCoordinates = {
+    const selectedCoordinates = {
       latitude: suggestion.geometry.coordinates[1],
       longitude: suggestion.geometry.coordinates[0],
     };
 
     if (isOriginBoxActive) {
       setSearchQuery1(suggestion.place_name); // Update origin search query
-      setOriginCoordinates(destinationCoordinates); // Set the origin coordinates
+      setUserLocation(selectedCoordinates); // Update user's current location
       console.log("Origin Selected:", suggestion.place_name);
-
-      await AsyncStorage.setItem("originName", suggestion.place_name);
     } else {
       setSearchQuery2(suggestion.place_name); // Update destination search query
-      setDestinationCoordinates(destinationCoordinates); // Set the destination coordinates
-
-      console.log("Destination Selected:", suggestion.place_name); // Log destination
-      await AsyncStorage.setItem("destinationName", suggestion.place_name);
+      setDestinationCoordinates(selectedCoordinates); // Update destination coordinates
+      console.log("Destination Selected:", suggestion.place_name);
     }
 
-    // Check if both origin and destination are selected
+    // Navigate only when both origin and destination are selected
     if (searchQuery1 && searchQuery2) {
-      setModalVisible(false); // Close the modal only after both locations are selected
-
-      const data = {
-        origin: `${userLocation.latitude},${userLocation.longitude}`,
-        destination: `${destinationCoordinates.latitude},${destinationCoordinates.longitude}`,
-        state: stateName, // Ensure this is set correctly
-      };
-
-      console.log("State Name:", stateName);
-
+      setModalVisible(false); // Close the modal
       try {
-        // Call the distance matrix API
-        const response = await axios.post(
-          "http://192.168.43.235:3000/distanceMatrix",
-          data
-        );
-        console.log("Distance:", response.data.distance);
-
-        // Call the cost calculator API
-        const costResponse = await axios.post(
-          "http://192.168.43.235:3000/calculate-cost",
-          {
-            state: stateName,
-            origin: `${userLocation.latitude},${userLocation.longitude}`,
-            destination: `${destinationCoordinates.latitude},${destinationCoordinates.longitude}`,
-          }
-        );
-
-        console.log("Fuel Price:", costResponse.data.fuelPrice);
-        console.log("Total Distance:", costResponse.data.distance);
-        console.log("Total Cost:", costResponse.data.totalCost);
-
-        navigation.navigate("MapScreen", {
-          destination: destinationCoordinates,
-          origin: originCoordinates,
-          distance: response.data.distance,
-          totalCost: costResponse.data.totalCost,
-        });
-        console.log("Data sent to MapScreen:", {
-          destination: destinationCoordinates,
-          origin: originCoordinates,
-          distance: costResponse.data.distance,
-          totalCost: costResponse.data.totalCost,
+        navigation.navigate("RideList", {
+          origin: userLocation, // Pass origin coordinates
+          destination: selectedCoordinates, // Pass destination coordinates
         });
       } catch (error) {
         console.error(
-          "Error sending data to backend:",
+          "Error navigating to RideList:",
           error.response ? error.response.data : error.message
         );
-        Alert.alert(
-          "Error",
-          "Could not calculate distance and cost, please try again."
-        );
+        Alert.alert("Error", "Unable to proceed to RideList.");
       }
     }
   };
+
   if (errorMsg) {
     return (
       <View style={styles.errorContainer}>
@@ -395,8 +332,8 @@ const TravellerHomeScreen = ({ navigation }) => {
                 source={require("../assets/profilePic.jpg")}
                 style={styles.profileImage}
               />
-              <Text style={styles.userName}>{userName}</Text>
-              <Text style={styles.userEmail}>email placeholder</Text>
+              <Text style={styles.userName}>Naina Kapoor</Text>
+              <Text style={styles.userEmail}>naina**@gmail.com</Text>
               <View style={styles.menuOptions}>
                 <TouchableOpacity>
                   <Text style={styles.menuOptionText}>Profile</Text>

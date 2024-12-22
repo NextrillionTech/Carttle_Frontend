@@ -15,6 +15,8 @@ import {
   Keyboard,
 } from "react-native";
 
+import DateTimePicker from "@react-native-community/datetimepicker";
+
 import MapView, { Marker, UrlTile } from "react-native-maps";
 import * as Location from "expo-location";
 import { Picker } from "@react-native-picker/picker";
@@ -35,15 +37,14 @@ const MAPBOX_ACCESS_TOKEN =
 const MAPBOX_TILE_URL = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/256/{z}/{x}/{y}@2x?access_token=${MAPBOX_ACCESS_TOKEN}`;
 
 const SelectedTimeScreen = ({ navigation, route }) => {
-  const { selectedTime } = route.params; // Get the selected time from navigation parameters
   const [selectedTimeState, setSelectedTimeState] = useState(selectedTime); // Set it in state
   const [region, setRegion] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   const [activeTab, setActiveTab] = useState("home");
   const [showRadioButtons, setShowRadioButtons] = useState(false);
-  const [setSelectedTime] = useState("Now");
   const [modalVisible, setModalVisible] = useState(false);
+  const [selectedTime, setSelectedTime] = useState("Now");
   const [searchQuery1, setSearchQuery1] = useState("");
 
   const [searchQuery2, setSearchQuery2] = useState("");
@@ -57,6 +58,24 @@ const SelectedTimeScreen = ({ navigation, route }) => {
   const [stateName, setStateName] = useState(""); // Use state instead of a simple variable
   const [time, setTime] = useState("Select Time");
   const [originCoordinates, setOriginCoordinates] = useState(null); // Add this to track the origin
+
+  const [isTimePickerVisible, setIsTimePickerVisible] = useState(false);
+  const [chosenTime, setChosenTime] = useState(new Date());
+
+  const [formattedTime, setFormattedTime] = useState("");
+
+  const handleTimeChange = (event, time) => {
+    const currentTime = time || chosenTime;
+    setIsTimePickerVisible(false);
+    setChosenTime(currentTime);
+    const hours = currentTime.getHours();
+    const minutes = currentTime.getMinutes();
+    const ampm = hours >= 12 ? "PM" : "AM";
+    const formatted = `${(((hours + 11) % 12) + 1)
+      .toString()
+      .padStart(2, "0")}:${minutes.toString().padStart(2, "0")} ${ampm}`;
+    setFormattedTime(formatted); // Update the formatted time state
+  };
 
   const formatStateName = (contextArray) => {
     const stateInfo = contextArray.find((context) =>
@@ -273,14 +292,19 @@ const SelectedTimeScreen = ({ navigation, route }) => {
     </TouchableOpacity>
   );
 
-  const selectTime = (time) => {
-    setSelectedTime(time);
-    setShowRadioButtons(false);
+  const selectTime = async (option) => {
+    setSelectedTime(option);
+    setShowRadioButtons(false); // Hide radio buttons after selection
 
-    // Navigate to the desired screen with the selected time as a parameter
-    navigation.navigate("SelectedTimeScreen", { selectedTime: time });
+    if (option === "Now") {
+      navigation.navigate("HomeScreen", { selectedTime: option }); // Navigate to HomeScreen
+    } else {
+      setSelectedTimeState(option); // Update displayed time for other options
+      // Store the selected option in AsyncStorage with a different variable name
+      await AsyncStorage.setItem("selectedTimeOption", option);
+      console.log("Stored in AsyncStorage:", option);
+    }
   };
-
   const selectSuggestion = async (suggestion, isOriginBoxActive) => {
     const destinationCoordinates = {
       latitude: suggestion.geometry.coordinates[1],
@@ -470,39 +494,31 @@ const SelectedTimeScreen = ({ navigation, route }) => {
               style={styles.dropdownIcon}
             />
           </TouchableOpacity>
-
-          <TouchableOpacity style={styles.optionButtonLarge}>
+          <TouchableOpacity
+            style={styles.optionButton}
+            onPress={() => setIsTimePickerVisible(true)} // Show the DateTimePicker
+          >
             <Image
-              source={require("../assets/current_location.png")}
-              style={styles.optionIcon1}
+              source={require("../assets/clock.png")}
+              style={styles.optionIcon}
             />
-
-            <Picker
-              selectedValue={time}
-              style={{
-                fontSize: 16,
-                height: 50,
-                width: "100%",
-                fontFamily: "poppins", // Poppins font applied here
-                color: "black",
-              }}
-              onValueChange={(itemValue) => setTime(itemValue)}
-              dropdownIconColor="#e8e8e8" // For Android, hide the default dropdown icon
-            >
-              <Picker.Item label="Select Time" value="Select Time" />
-              {timeOptions.map((timeOption, index) => (
-                <Picker.Item
-                  label={timeOption}
-                  value={timeOption}
-                  key={index}
-                />
-              ))}
-            </Picker>
+            <Text style={styles.optionText}>
+              {formattedTime || "Select Time"}
+            </Text>
             <Image
-              source={require("../assets/dropdown.png")} // Replace with your image path
+              source={require("../assets/dropdown.png")}
               style={styles.dropdownIcon}
             />
           </TouchableOpacity>
+          {isTimePickerVisible && (
+            <DateTimePicker
+              value={chosenTime}
+              mode="time"
+              is24Hour={false} // Use 12 hours format
+              display="default"
+              onChange={handleTimeChange}
+            />
+          )}
         </View>
         <TouchableOpacity
           style={styles.destinationButton}
@@ -530,6 +546,8 @@ const SelectedTimeScreen = ({ navigation, route }) => {
           {renderRadioButton("Now")}
           {renderRadioButton("Later")}
           {renderRadioButton("Tomorrow")}
+
+          {renderRadioButton("Custom Date")}
         </View>
       )}
       <Modal visible={modalVisible} animationType="slide" transparent={true}>

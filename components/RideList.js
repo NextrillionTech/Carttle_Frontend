@@ -11,59 +11,19 @@ import BottomNav from "./BottomNav"; // Ensure BottomNav is correctly imported
 import { useNavigation } from "@react-navigation/native";
 import * as Font from "expo-font";
 
-const fetchFonts = () => {
+function fetchFonts() {
   return Font.loadAsync({
     poppins: require("../assets/Poppins-Medium.ttf"),
   });
-};
+}
 
-const RideItem = ({ ride }) => {
-  return (
-    <View style={styles.card}>
-      <View style={styles.row}>
-        <Image
-          source={require("../assets/driver_avatar.png")}
-          style={styles.profilePic}
-        />
-        <View style={styles.info}>
-          <Text style={styles.name}>{ride.name}</Text>
-          <View style={styles.ratingRow}>
-            <Text style={styles.rating}>⭐ {ride.rating}</Text>
-            <Text style={styles.ratingCount}>({ride.ratingCount})</Text>
-          </View>
-          <Text style={styles.location}>{ride.pickup}</Text>
-          <Text style={styles.location}>{ride.destination}</Text>
-        </View>
-        <View style={styles.timeContainer}>
-          <Text style={styles.time}>{ride.time}</Text>
-        </View>
-      </View>
-      <View style={styles.detailsRow}>
-        <View style={styles.detail}>
-          <Text style={styles.detailLabel}>Price</Text>
-          <Text style={styles.detailValue}>{ride.price}</Text>
-        </View>
-        <View style={styles.detail}>
-          <Text style={styles.detailLabel}>Vehicle</Text>
-          <Text style={styles.detailValue}>{ride.vehicle}</Text>
-        </View>
-        <View style={styles.detail}>
-          <Text style={styles.detailLabel}>Time</Text>
-          <Text style={styles.detailValue}>{ride.rideTime}</Text>
-        </View>
-      </View>
-      <TouchableOpacity style={styles.requestButton}>
-        <Text style={styles.requestButtonText} onPress={handleRequestPress}>
-          Request Ride
-        </Text>
-      </TouchableOpacity>
-    </View>
-  );
-};
-
-const RidesList = () => {
+const RideList = () => {
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState("rides");
+
+  const handleRequestPress = () => {
+    navigation.navigate("TravellerBooking");
+  };
 
   const handleTabPress = (tab) => {
     setActiveTab(tab);
@@ -76,13 +36,53 @@ const RidesList = () => {
     }
   };
 
-  const handleRequestPress = () => {
-    navigation.navigate("TravelBooking");
+  const openMenu = () => {
+    console.log("Menu opened");
   };
 
-  const openMenu = () => {
-    // Logic to open the menu
-    console.log("Menu opened");
+  const RideItem = ({ ride }) => {
+    return (
+      <View style={styles.card}>
+        <View style={styles.row}>
+          <Image
+            source={require("../assets/driver_avatar.png")}
+            style={styles.profilePic}
+          />
+          <View style={styles.info}>
+            <Text style={styles.name}>{ride.name}</Text>
+            <View style={styles.ratingRow}>
+              <Text style={styles.rating}>⭐ {ride.rating}</Text>
+              <Text style={styles.ratingCount}>({ride.ratingCount})</Text>
+            </View>
+            <Text style={styles.location}>{ride.pickup}</Text>
+            <Text style={styles.location}>{ride.destination}</Text>
+          </View>
+          <View style={styles.timeContainer}>
+            <Text style={styles.time}>{ride.time}</Text>
+          </View>
+        </View>
+        <View style={styles.detailsRow}>
+          <View style={styles.detail}>
+            <Text style={styles.detailLabel}>Price</Text>
+            <Text style={styles.detailValue}>{ride.price}</Text>
+          </View>
+          <View style={styles.detail}>
+            <Text style={styles.detailLabel}>Vehicle</Text>
+            <Text style={styles.detailValue}>{ride.vehicle}</Text>
+          </View>
+          <View style={styles.detail}>
+            <Text style={styles.detailLabel}>Time</Text>
+            <Text style={styles.detailValue}>{ride.rideTime}</Text>
+          </View>
+        </View>
+        <TouchableOpacity
+          style={styles.requestButton}
+          onPress={handleRequestPress}
+        >
+          <Text style={styles.requestButtonText}>Request Ride</Text>
+        </TouchableOpacity>
+      </View>
+    );
   };
 
   const openNotifications = () => {
@@ -103,23 +103,21 @@ const RidesList = () => {
       rideTime: "5:20pm",
       time: "Coming in 5 mins",
     },
-    // Add more rides here
   ];
 
   return (
     <View style={styles.container}>
-      {/* Header with Menu and Notification Icons */}
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={openMenu}>
           <Image
-            source={require("../assets/nav_icon.png")} // Ensure this path is correct
+            source={require("../assets/nav_icon.png")}
             style={styles.icon}
           />
         </TouchableOpacity>
 
         <TouchableOpacity onPress={openNotifications}>
           <Image
-            source={require("../assets/Bell_icon.png")} // Ensure this path is correct
+            source={require("../assets/Bell_icon.png")}
             style={styles.icon}
           />
         </TouchableOpacity>
@@ -138,6 +136,7 @@ const RidesList = () => {
 };
 
 const styles = StyleSheet.create({
+  // Your existing styles here...
   container: {
     flex: 1,
     backgroundColor: "#fff",
@@ -148,7 +147,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     padding: 16,
-    position: "absolute", // Positioning the header at the top
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
@@ -256,4 +255,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RidesList;
+export default RideList;

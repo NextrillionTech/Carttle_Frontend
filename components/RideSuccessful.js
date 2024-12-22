@@ -21,7 +21,6 @@ const RideSuccessful = ({ route }) => {
     amountPerSeat,
     date,
     time,
-    rideId, // Extract rideId from params
   } = route.params;
 
   console.log("Ride Details:", {
@@ -31,7 +30,6 @@ const RideSuccessful = ({ route }) => {
     amountPerSeat,
     date,
     time,
-    rideId, // Log the rideId
   });
 
   const navigation = useNavigation();
@@ -105,8 +103,6 @@ const RideSuccessful = ({ route }) => {
 
       <Text style={styles.successText}>Ride Created Successfully</Text>
 
-      <Text style={styles.rideId}>{rideId}</Text>
-
       <View style={styles.detailsContainer}>
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>From:</Text>
@@ -131,11 +127,6 @@ const RideSuccessful = ({ route }) => {
           <Text style={styles.detailValue}>
             {getCurrentDateTime(date)}, {time}
           </Text>
-        </View>
-        {/* Display the rideId */}
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Ride ID</Text>
-          <Text style={styles.detailValue}>{rideId}</Text>
         </View>
       </View>
 

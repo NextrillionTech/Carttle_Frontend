@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   Animated,
   Easing,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import * as Font from "expo-font";
 
 const fetchFonts = () => {
@@ -24,8 +24,8 @@ const carImage = require("../assets/travel.png");
 
 const TravellerWelcome = () => {
   const navigation = useNavigation();
-  const travelerOpacity = new Animated.Value(1);
-  const driverOpacity = new Animated.Value(1);
+  const travelerOpacity = useRef(new Animated.Value(1)).current; // Use useRef
+  const driverOpacity = useRef(new Animated.Value(1)).current; // Use useRef
   const [fontsLoaded, setFontsLoaded] = useState(false);
 
   useEffect(() => {
@@ -36,24 +36,34 @@ const TravellerWelcome = () => {
     loadFonts();
   }, []);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      // Reset opacity values when screen is focused
+      travelerOpacity.setValue(1);
+      driverOpacity.setValue(1);
+    }, [travelerOpacity, driverOpacity])
+  );
+
   const handleTravelerPress = () => {
-    navigation.navigate("TravellerSignup");
     Animated.timing(travelerOpacity, {
       toValue: 0,
       duration: 900,
       useNativeDriver: true,
       easing: Easing.inOut(Easing.ease),
-    }).start();
+    }).start(() => {
+      navigation.navigate("TravellerSignup");
+    });
   };
 
   const handleDriverPress = () => {
-    navigation.navigate("TravellerLogin");
     Animated.timing(driverOpacity, {
       toValue: 0,
       duration: 300,
       useNativeDriver: true,
       easing: Easing.inOut(Easing.ease),
-    }).start();
+    }).start(() => {
+      navigation.navigate("TravellerLogin");
+    });
   };
 
   if (!fontsLoaded) {
@@ -109,7 +119,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 15,
     marginTop: 10,
-
     fontFamily: "poppins",
   },
   subtitle: {
@@ -122,12 +131,12 @@ const styles = StyleSheet.create({
   buttonContainer: {
     width: "100%",
     alignItems: "center",
-    marginTop: height * 0.1, // Adjust this value to move both buttons down
+    marginTop: height * 0.1,
   },
   buttonWrapper: {
     width: "100%",
     alignItems: "center",
-    marginBottom: height * 0.03, // Space between the buttons
+    marginBottom: height * 0.03,
   },
   button: {
     width: width * 0.8,

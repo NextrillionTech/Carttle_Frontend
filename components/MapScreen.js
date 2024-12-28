@@ -47,7 +47,16 @@ const MapScreen = ({ route }) => {
   const [userName, setUserName] = useState("");
 
   const [modalCommuteRegularly, setModalCommuteRegularly] = useState(false); // Toggle for modal
-  const { totalCost, origin, destination } = route.params;
+  const {
+    totalCost,
+    origin,
+    destination,
+    option,
+    timeData,
+    customDate,
+    distance,
+    formattedTime,
+  } = route.params;
 
   const slideAnim = useRef(new Animated.Value(-300)).current;
   const [selectedTime, setSelectedTime] = useState("");
@@ -80,9 +89,16 @@ const MapScreen = ({ route }) => {
   };
 
   useEffect(() => {
+    if (option) {
+      setSelectedTime(option); // Set selectedTime to option when it is received
+    }
+  }, [option]);
+
+  useEffect(() => {
     const getSelectedTime = async () => {
       try {
         const time = await AsyncStorage.getItem("selectedTime");
+
         if (time !== null) {
           setSelectedTime(time);
           console.log("Retrieved time from AsyncStorage:", time);
@@ -200,6 +216,9 @@ const MapScreen = ({ route }) => {
       origin,
       destination,
       totalCost,
+      option,
+      timeData,
+      customDate,
     });
     const getName = async () => {
       try {
@@ -406,11 +425,37 @@ const MapScreen = ({ route }) => {
   };
 
   // Continue from the existing code...
+  const convert12hrTo24hrFormat = (time) => {
+    // Check if the input time is in 12-hour format (e.g., "02:30 PM")
+    const match = time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+    if (match) {
+      let [_, hours, minutes, period] = match; // Extract hours, minutes, and AM/PM
+      hours = parseInt(hours, 10);
+
+      // Convert PM hours (except for 12 PM which remains the same)
+      if (period.toUpperCase() === "PM" && hours !== 12) {
+        hours += 12; // Convert PM hours
+      }
+      // Convert 12 AM to 00
+      else if (period.toUpperCase() === "AM" && hours === 12) {
+        hours = 0; // Convert 12 AM to 00
+      }
+
+      // Return the time in 24-hour format (HH:mm)
+      return `${String(hours).padStart(2, "0")}:${minutes}`;
+    } else {
+      // If time is already in HH:mm format, just return it as is
+      return time;
+    }
+  };
+  const convertToISOFormat = (dateStr) => {
+    const [day, month, year] = dateStr.split("-");
+    return `${year}-${month}-${day}`;
+  };
 
   const handleConfirmDetails = async () => {
     try {
       const storedUserId = await AsyncStorage.getItem("userId");
-
       const selectedTime = await AsyncStorage.getItem("selectedTime");
 
       if (!storedUserId) {
@@ -422,58 +467,12 @@ const MapScreen = ({ route }) => {
         longitude: location.longitude, // Longitude first
         latitude: location.latitude, // Latitude second
       });
-      if (selectedTime === "Now") {
-        if (commuteRegularly) {
-          console.log("modalCommuteRegularly is true");
 
-          if (!commuteBackRegularly) {
-            console.log("commuteBackRegularly is false");
+      if (commuteRegularly) {
+        console.log("modalCommuteRegularly is true");
 
-            dataToSend = {
-              driver: {
-                // 1. driver (nested object)
-                name: userName,
-                userId: storedUserId,
-              },
-              from: formatLocation(origin), // 2. from (longitude, latitude)
-              to: formatLocation(destination), // 3. to (longitude, latitude)
-              shuttle: true, // 4. shuttle
-              round_trip: false, // 5. round_trip
-              available_seat: seatsAvailable, // 6. available_seat
-              amount_per_seat: amountPerSeat, // 7. amount_per_seat
-              dateDetails: {
-                // 8. dateDetails
-                start_date: startDate,
-                end_date: endDate,
-                time: time,
-              },
-            };
-          } else {
-            console.log("commuteBackRegularly is true");
-
-            dataToSend = {
-              driver: {
-                // 1. driver (nested object)
-                name: userName,
-                userId: storedUserId,
-              },
-              from: formatLocation(origin), // 2. from (longitude, latitude)
-              to: formatLocation(destination), // 3. to (longitude, latitude)
-              shuttle: true, // 4. shuttle
-              round_trip: true, // 5. round_trip
-              available_seat: seatsAvailable, // 6. available_seat
-              amount_per_seat: amountPerSeat, // 7. amount_per_seat
-              dateDetails: {
-                // 8. dateDetails
-                start_date: startDate,
-                end_date: endDate,
-                time: time,
-                round_trip_time: time1, // Additional field for round trips
-              },
-            };
-          }
-        } else {
-          console.log("modalCommuteRegularly is false");
+        if (!commuteBackRegularly) {
+          console.log("commuteBackRegularly is false");
 
           dataToSend = {
             driver: {
@@ -483,24 +482,94 @@ const MapScreen = ({ route }) => {
             },
             from: formatLocation(origin), // 2. from (longitude, latitude)
             to: formatLocation(destination), // 3. to (longitude, latitude)
-            shuttle: false, // 4. shuttle
+            shuttle: true, // 4. shuttle
             round_trip: false, // 5. round_trip
             available_seat: seatsAvailable, // 6. available_seat
             amount_per_seat: amountPerSeat, // 7. amount_per_seat
             dateDetails: {
               // 8. dateDetails
-              date: new Date().toISOString(),
-              time: formatTime(time),
+              start_date: convertToISOFormat(startDate),
+              end_date: convertToISOFormat(endDate),
+              time:
+                option === "Later" ||
+                option === "Custom Date" ||
+                option === "Tomorrow"
+                  ? route.params.formattedTime ||
+                    convert12hrTo24hrFormat(formattedTime) // Convert 12hr to 24hr if needed
+                  : formatTime(time),
+            },
+          };
+        } else {
+          console.log("commuteBackRegularly is true");
+
+          dataToSend = {
+            driver: {
+              // 1. driver (nested object)
+              name: userName,
+              userId: storedUserId,
+            },
+            from: formatLocation(origin), // 2. from (longitude, latitude)
+            to: formatLocation(destination), // 3. to (longitude, latitude)
+            shuttle: true, // 4. shuttle
+            round_trip: true, // 5. round_trip
+            available_seat: seatsAvailable, // 6. available_seat
+            amount_per_seat: amountPerSeat, // 7. amount_per_seat
+            dateDetails: {
+              // 8. dateDetails
+              start_date: convertToISOFormat(startDate),
+              end_date: convertToISOFormat(endDate),
+              time:
+                option === "Later" ||
+                option === "Custom Date" ||
+                option === "Tomorrow"
+                  ? route.params.formattedTime ||
+                    convert12hrTo24hrFormat(formattedTime)
+                  : formatTime(time),
+              round_trip_time: convert12hrTo24hrFormat(time1), // Convert time for round trip to 24hr format
             },
           };
         }
+      } else {
+        console.log("modalCommuteRegularly is false");
+
+        dataToSend = {
+          driver: {
+            // 1. driver (nested object)
+            name: userName,
+            userId: storedUserId,
+          },
+          from: formatLocation(origin), // 2. from (longitude, latitude)
+          to: formatLocation(destination), // 3. to (longitude, latitude)
+          shuttle: false, // 4. shuttle
+          round_trip: false, // 5. round_trip
+          available_seat: seatsAvailable, // 6. available_seat
+          amount_per_seat: amountPerSeat, // 7. amount_per_seat
+          dateDetails: {
+            // 8. dateDetails
+            date:
+              option === "Tomorrow"
+                ? new Date(
+                    new Date().setDate(new Date().getDate() + 1)
+                  ).toISOString()
+                : option === "Custom Date"
+                ? customDate.toISOString()
+                : new Date().toISOString(),
+            time:
+              option === "Later" ||
+              option === "Custom Date" ||
+              option === "Tomorrow"
+                ? route.params.formattedTime ||
+                  convert12hrTo24hrFormat(formattedTime)
+                : formatTime(time),
+          },
+        };
       }
 
       console.log("Data being sent:", JSON.stringify(dataToSend));
 
       // Sending the data to API
       const response = await axios.post(
-        "http://192.168.43.235:3000/create-ride",
+        "http://192.168.29.99:3000/create-ride",
         dataToSend
       );
       console.log("Response:", response.data);
@@ -530,8 +599,6 @@ const MapScreen = ({ route }) => {
     }
   };
 
-  // Continue with the rest of your code...
-
   // Helper function to format time to "hh:mm AM/PM"
   const formatTime = (time) => {
     const date = new Date(time);
@@ -543,6 +610,8 @@ const MapScreen = ({ route }) => {
     const strMinutes = minutes < 10 ? "0" + minutes : minutes;
     return hours + ":" + strMinutes + " " + ampm;
   };
+
+  // Set selectedTime to option when it is received for all the time other than "Now"
 
   if (loading) {
     return (
@@ -624,11 +693,9 @@ const MapScreen = ({ route }) => {
                   onPress={() => navigation.navigate("Profile")}
                 >
                   <Text style={styles.menuOptionText}>Profile</Text>
-                  <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
-                <TouchableOpacity>
-                  <View style={styles.horizontalRuler2} />
-                </TouchableOpacity>
+                <View style={styles.horizontalRuler2} />
+
                 <TouchableOpacity onPress={handleOpenWebsite}>
                   <Text style={styles.menuOptionText}>About</Text>
                   <View style={styles.horizontalRuler2} />
@@ -639,7 +706,9 @@ const MapScreen = ({ route }) => {
                   <Text style={styles.menuOptionText}>Help</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
-                <TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate("DriverLogin")}
+                >
                   <Text style={styles.menuOptionText}>Sign Out</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
@@ -670,8 +739,15 @@ const MapScreen = ({ route }) => {
             />
             <View>
               <Text style={styles.driverName}>
-                {carRegNumber} ({selectedTime})
+                {carRegNumber} (
+                {selectedTime === "Now"
+                  ? option && option !== "Now"
+                    ? option
+                    : "Now"
+                  : selectedTime}
+                )
               </Text>
+
               <View style={styles.locationContainer}>
                 <Image
                   source={require("../assets/from_icon.png")}
@@ -1234,30 +1310,6 @@ const styles = StyleSheet.create({
     height: 40,
   },
 
-  profileImage: {
-    width: 80,
-    height: 80,
-    top: 25,
-    borderRadius: 40,
-    marginBottom: 30,
-  },
-  userName: {
-    fontSize: 20,
-    fontFamily: "poppins",
-  },
-  userEmail: {
-    fontSize: 10,
-    color: "gray",
-    fontFamily: "poppins",
-    marginBottom: 30,
-  },
-  menuOptionText: {
-    fontSize: 18,
-    alignContent: "center",
-    alignItems: "center",
-    fontFamily: "poppins",
-    paddingVertical: 10,
-  },
   horizontalRuler: {
     width: "100%",
     height: 1,
@@ -1265,13 +1317,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     marginVertical: 10,
   },
-  horizontalRuler2: {
-    width: "150%",
-    height: 1,
-    backgroundColor: "#d3d3d3",
-    alignSelf: "center",
-    marginVertical: 10,
-  },
+
   card: {
     width: "100%",
     height: "65%",
@@ -1445,6 +1491,36 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 50,
     left: 0,
     alignItems: "center",
+  },
+
+  horizontalRuler2: {
+    width: "150%", // Adjust this to control the width of the ruler
+    height: 1,
+    backgroundColor: "#d3d3d3", // Grey color
+    alignSelf: "center", // Center align the ruler
+    marginVertical: 10, // Optional: Adjust vertical spacing
+  },
+
+  profileImage: {
+    width: 80,
+    height: 80,
+    top: "10%",
+    borderRadius: 40,
+    marginBottom: 30,
+  },
+  userName: {
+    fontSize: 20,
+    fontFamily: "poppins",
+    marginTop: "20%",
+  },
+
+  menuOptionText: {
+    fontSize: 18,
+    alignContent: "center",
+    alignItems: "center",
+    fontFamily: "poppins",
+    paddingVertical: 10,
+    marginTop: 50,
   },
 });
 

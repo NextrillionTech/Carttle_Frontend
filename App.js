@@ -28,6 +28,14 @@ import TravellerSignup from "./components/TravellerSignup";
 import TravellerLogin from "./components/TravellerLogin";
 import TravellerHomeScreen from "./components/TravellerHomeScreen";
 import RideList from "./components/RideList";
+import TravelerSelectTime from "./components/TravelerSelectTime";
+import TripHistory from "./components/TripHistory";
+import TravelerBottomNav from "./components/TravelerBottomNav";
+import TravellerBooking from "./components/TravellerBooking";
+import PaymentScreen from "./components/PaymentSuccess";
+import TravellerRideDetails from "./components/TravellerRideDetails";
+import DeleteAccountScreen from "./components/DeleteAcc";
+import TravelerProfile from "./components/TravelerProfile";
 
 const Stack = createStackNavigator();
 
@@ -153,8 +161,48 @@ function App() {
           options={{ headerShown: false }}
         />
         <Stack.Screen
+          name="TravelerSelectTime"
+          component={TravelerSelectTime}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="TravelerBottomNav"
+          component={TravelerBottomNav}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="TripHistory"
+          component={TripHistory}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
           name="RideList"
           component={RideList}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="DeleteAccountScreen"
+          component={DeleteAccountScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="TravellerBooking"
+          component={TravellerBooking}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="PaymentScreen"
+          component={PaymentScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="TravellerRideDetails"
+          component={TravellerRideDetails}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="TravelerProfile"
+          component={TravelerProfile}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

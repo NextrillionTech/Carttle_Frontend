@@ -10,17 +10,27 @@ import {
   Animated,
   TextInput,
   Modal,
+  ScrollView,
   FlatList,
+  setLoading,
   TouchableWithoutFeedback,
   Keyboard,
 } from "react-native";
+
 import MapView, { Marker, UrlTile } from "react-native-maps";
 import * as Location from "expo-location";
 import axios from "axios";
-import BottomNav from "./BottomNav";
-import AsyncStorage from "@react-native-async-storage/async-storage"; // Import sAsyncStorage
-
+import TravelerBottomNav from "./TravelerBottomNav";
 import * as Font from "expo-font";
+import { Linking } from "react-native";
+
+import AsyncStorage from "@react-native-async-storage/async-storage"; // Import sAsyncStorage
+const handleOpenWebsite = () => {
+  const url = "https://nextrilliontech.infinityfreeapp.com/";
+  Linking.openURL(url).catch((err) =>
+    console.error("Failed to open URL:", err)
+  );
+};
 
 const fetchFonts = () => {
   return Font.loadAsync({
@@ -32,27 +42,90 @@ const MAPBOX_ACCESS_TOKEN =
   "sk.eyJ1IjoibmV4dHJpbGxpb24tdGVjaCIsImEiOiJjbHpnaHdiaTkxb29xMmpxc3V5bTRxNWNkIn0.l4AsMHEMhAEO90klTb3oCQ";
 const MAPBOX_TILE_URL = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/256/{z}/{x}/{y}@2x?access_token=${MAPBOX_ACCESS_TOKEN}`;
 
-const TravellerHomeScreen = ({ navigation }) => {
+const TravellerHomeScreen = ({ route, navigation }) => {
   const [region, setRegion] = useState(null);
+
+  const [selectedTime, setSelectedTime] = useState("Select Time");
   const [userLocation, setUserLocation] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   const [activeTab, setActiveTab] = useState("home");
   const [showRadioButtons, setShowRadioButtons] = useState(false);
-  const [selectedTime, setSelectedTime] = useState("Now");
-  const [userName, setUserName] = useState("");
+  const [TravelerUserId, setTravelerUserId] = useState(null);
+  const [TravelerUserName, setTravelerUserName] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false); //MODAL FOR SELECTING SCREEN FOR DIFFERENT ORIGIN AND DEST
 
-  const [modalVisible, setModalVisible] = useState(false);
+  const [modalSecondVisible, setModalSecondVisible] = useState(false); //MODAL FOR SELECTING SCREEN FOR current ORIGIN AND DEST
   const [searchQuery1, setSearchQuery1] = useState("");
 
   const [searchQuery2, setSearchQuery2] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [fontLoaded, setFontLoaded] = useState(false);
   const [isMenuVisible, setMenuVisible] = useState(false);
+
+  const [currentAddress, setCurrentAddress] = useState("Fetching address...");
+  const [currentLocLatitude, setCurrentLocLatitude] = useState(null);
+  const [currentLocLongitude, setCurrentLocLongitude] = useState(null);
+  const [TraveleruserMobile, setTraveleruserMobile] = useState(null);
+
   const [placeName, setPlaceName] = useState("Fetching current location...");
   const [dropdownPosition, setDropdownPosition] = useState(null);
   const [destinationCoordinates, setDestinationCoordinates] = useState(null);
   const slideAnim = useRef(new Animated.Value(-300)).current; // Start off-screen
   const [stateName, setStateName] = useState(""); // Use state instead of a simple variable
+
+  const [originCoordinates, setOriginCoordinates] = useState(null); // Add this to track the origin
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        // Retrieve user ID and name from AsyncStorage
+        const storedTravelerUserId = await AsyncStorage.getItem(
+          "TraveleruserId"
+        );
+        const storedTraveleruserMobile = await AsyncStorage.getItem(
+          "TraveleruserMobile"
+        );
+        const storedTravelerUserName = await AsyncStorage.getItem(
+          "TraveleruserName"
+        );
+        if (storedTravelerUserId && storedTravelerUserName) {
+          setTravelerUserId(storedTravelerUserId); // Correctly set TravelerUserId
+          setTravelerUserName(storedTravelerUserName); // Correctly set TravelerUserName
+          setTraveleruserMobile(storedTraveleruserMobile);
+        } else {
+          console.log("User data not found");
+        }
+      } catch (error) {
+        console.error("Error retrieving data from AsyncStorage:", error);
+      }
+    };
+
+    loadUserData();
+  }, []);
+
+  useEffect(() => {
+    if (modalSecondVisible && userLocation) {
+      fetchCurrentAddress();
+    }
+  }, [modalSecondVisible]);
+
+  const fetchCurrentAddress = async () => {
+    try {
+      const response = await axios.get(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${userLocation.longitude},${userLocation.latitude}.json?access_token=sk.eyJ1IjoibmV4dHJpbGxpb24tdGVjaCIsImEiOiJjbHpnaHdiaTkxb29xMmpxc3V5bTRxNWNkIn0.l4AsMHEMhAEO90klTb3oCQ`
+      );
+      const address =
+        response.data.features[0]?.place_name || "Unable to fetch address";
+
+      // Store the latitude and longitude as currentLocLatitude and currentLocLongitude
+      setCurrentLocLatitude(userLocation.latitude);
+      setCurrentLocLongitude(userLocation.longitude);
+
+      setCurrentAddress(address);
+    } catch (error) {
+      console.error("Error fetching current location address:", error.message);
+      setCurrentAddress("Unable to fetch address");
+    }
+  };
 
   const formatStateName = (contextArray) => {
     const stateInfo = contextArray.find((context) =>
@@ -64,6 +137,24 @@ const TravellerHomeScreen = ({ navigation }) => {
   const openNotifications = () => {
     navigation.navigate("NotificationScreen");
   };
+
+  useEffect(() => {
+    const fetchUserName = async () => {
+      try {
+        const name = await AsyncStorage.getItem("userName");
+        if (name !== null) {
+          setTravelerUserName(name); // Set the user name if it exists
+        } else {
+          Alert.alert("No user found", "User name is not available.");
+        }
+      } catch (error) {
+        console.error("Failed to fetch user name:", error);
+        Alert.alert("Error", "Failed to fetch user name.");
+      }
+    };
+
+    fetchUserName();
+  }, []);
 
   useEffect(() => {
     const loadFonts = async () => {
@@ -160,6 +251,7 @@ const TravellerHomeScreen = ({ navigation }) => {
       setPlaceName("Unknown location");
     }
   };
+
   const openTimeSelection = (event) => {
     event.target.measure((fx, fy, width, height, px, py) => {
       setDropdownPosition({ x: 20, y: 670 });
@@ -170,21 +262,46 @@ const TravellerHomeScreen = ({ navigation }) => {
   const handleTabPress = (tab) => {
     setActiveTab(tab);
     if (tab === "home") {
-      navigation.navigate("HomeScreen");
+      navigation.navigate("TravellerHomeScreen");
     } else if (tab === "rides") {
-      navigation.navigate("RidesScreen");
+      navigation.navigate("TripHistory");
     } else if (tab === "message") {
-      navigation.navigate("MessageScreen");
+      navigation.navigate("");
     }
   };
 
-  const selectTime = (time) => {
+  useEffect(() => {
+    if (route.params?.selectedTime) {
+      setSelectedTime(route.params.selectedTime);
+    }
+  }, [route.params]);
+  const selectTime = async (time) => {
     setSelectedTime(time);
     setShowRadioButtons(false);
+    if (time === "Now") {
+      // Store 'Now' in AsyncStorage
+
+      try {
+        navigation.navigate("TravellerHomeScreen"); // Navigate to HomeScreen
+
+        await AsyncStorage.setItem("selectedTime", time);
+        console.log("Stored 'Now' in AsyncStorage");
+      } catch (error) {
+        console.error("Failed to store time:", error);
+      }
+    }
+
+    // Navigate to the desired screen with the selected time as a parameter
+    else {
+      navigation.navigate("TravelerSelectTime", { selectedTime: time });
+    }
   };
 
   const openSearchModal = () => {
     setModalVisible(true);
+  };
+  const openSecondSearchModal = () => {
+    setModalSecondVisible(true);
   };
 
   const handleSearch1 = async (query) => {
@@ -241,7 +358,6 @@ const TravellerHomeScreen = ({ navigation }) => {
       setSuggestions([]);
     }
   };
-
   const renderRadioButton = (time) => (
     <TouchableOpacity
       onPress={() => selectTime(time)}
@@ -253,38 +369,143 @@ const TravellerHomeScreen = ({ navigation }) => {
       <Text style={styles.radioButtonLabel}>{time}</Text>
     </TouchableOpacity>
   );
-
   const selectSuggestion = async (suggestion, isOriginBoxActive) => {
-    const selectedCoordinates = {
+    const destinationCoordinates = {
       latitude: suggestion.geometry.coordinates[1],
       longitude: suggestion.geometry.coordinates[0],
     };
 
+    const currentDate = new Date();
+
+    // Format date in DD-MM-YYYY
+    const date = `${currentDate.getDate().toString().padStart(2, "0")}-${(
+      currentDate.getMonth() + 1
+    )
+      .toString()
+      .padStart(2, "0")}-${currentDate.getFullYear()}`;
+
+    // Format time in 12-hour format (HH:MM:SS AM/PM)
+    let hours = currentDate.getHours();
+    const minutes = currentDate.getMinutes().toString().padStart(2, "0");
+    const seconds = currentDate.getSeconds().toString().padStart(2, "0");
+    const ampm = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12;
+    hours = hours ? hours : 12; // the hour '0' should be '12'
+    const time = `${hours}:${minutes} ${ampm}`;
+
     if (isOriginBoxActive) {
       setSearchQuery1(suggestion.place_name); // Update origin search query
-      setUserLocation(selectedCoordinates); // Update user's current location
+      setOriginCoordinates(destinationCoordinates); // Set the origin coordinates
       console.log("Origin Selected:", suggestion.place_name);
+
+      await AsyncStorage.setItem("originName", suggestion.place_name);
     } else {
       setSearchQuery2(suggestion.place_name); // Update destination search query
-      setDestinationCoordinates(selectedCoordinates); // Update destination coordinates
-      console.log("Destination Selected:", suggestion.place_name);
+      setDestinationCoordinates(destinationCoordinates); // Set the destination coordinates
+
+      console.log("Destination Selected:", suggestion.place_name); // Log destination
+      await AsyncStorage.setItem("destinationName", suggestion.place_name);
     }
 
-    // Navigate only when both origin and destination are selected
+    // Check if both origin and destination are selected
     if (searchQuery1 && searchQuery2) {
-      setModalVisible(false); // Close the modal
+      setModalVisible(false); // Close the modal only after both locations are selected
+
+      const data = {
+        origin: `${userLocation.latitude},${userLocation.longitude}`,
+        destination: `${destinationCoordinates.latitude},${destinationCoordinates.longitude}`,
+        state: stateName, // Ensure this is set correctly
+      };
+
       try {
         navigation.navigate("RideList", {
-          origin: userLocation, // Pass origin coordinates
-          destination: selectedCoordinates, // Pass destination coordinates
+          destination: destinationCoordinates,
+          origin: originCoordinates,
+          option: "Now", // Include the option
+          currdate: date, // Send the date in DD-MM-YYYY format
+          currtime: time, // Send the time in 12-hour format
+        });
+        console.log("Data sent to RideList:", {
+          destination: destinationCoordinates,
+          origin: originCoordinates,
+          option: "Now",
+          currdate: date,
+          currtime: time,
         });
       } catch (error) {
-        console.error(
-          "Error navigating to RideList:",
-          error.response ? error.response.data : error.message
-        );
-        Alert.alert("Error", "Unable to proceed to RideList.");
+        console.error("Error sending data to backend:");
+        Alert.alert("Error");
       }
+    }
+  };
+
+  const selectSuggestion2 = async (suggestion) => {
+    const destinationCoordinates = {
+      latitude: suggestion.geometry.coordinates[1],
+      longitude: suggestion.geometry.coordinates[0],
+    };
+
+    const currentDate = new Date();
+
+    // Format date in DD-MM-YYYY
+    const date = `${currentDate.getDate().toString().padStart(2, "0")}-${(
+      currentDate.getMonth() + 1
+    )
+      .toString()
+      .padStart(2, "0")}-${currentDate.getFullYear()}`;
+
+    // Format time in 12-hour format (HH:MM:SS AM/PM)
+    let hours = currentDate.getHours();
+    const minutes = currentDate.getMinutes().toString().padStart(2, "0");
+    const seconds = currentDate.getSeconds().toString().padStart(2, "0");
+    const ampm = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12;
+    hours = hours ? hours : 12; // the hour '0' should be '12'
+    const time = `${hours}:${minutes} ${ampm}`;
+
+    // Update the destination search query and coordinates
+    setSearchQuery2(suggestion.place_name); // Update destination search query
+    setDestinationCoordinates(destinationCoordinates); // Set the destination coordinates
+
+    console.log("Destination Selected:", suggestion.place_name); // Log destination
+    await AsyncStorage.setItem("destinationName", suggestion.place_name);
+
+    // Close the modal and proceed only if destination is selected
+    setModalSecondVisible(false);
+
+    const data = {
+      origin: `${currentLocLatitude},${currentLocLongitude}`, // Origin from current location variables
+      destination: `${destinationCoordinates.latitude},${destinationCoordinates.longitude}`,
+      state: stateName, // Ensure this is set correctly
+    };
+
+    try {
+      navigation.navigate("RideList", {
+        destination: destinationCoordinates,
+        origin: {
+          latitude: currentLocLatitude,
+          longitude: currentLocLongitude,
+        },
+        option: "Now", // Include the option
+        date: date, // Send the date in DD-MM-YYYY format
+        time: time, // Send the time in 12-hour format
+      });
+      console.log("Data sent to RideList:", {
+        destination: destinationCoordinates,
+        origin: {
+          latitude: currentLocLatitude,
+          longitude: currentLocLongitude,
+        },
+        option: "Now",
+        date: date,
+        time: time,
+      });
+    } catch (error) {
+      console.error(
+        "Error sending data to backend:",
+        error.response ? error.response.data : error.message
+      );
+      Alert.alert("Error");
     }
   };
 
@@ -295,7 +516,6 @@ const TravellerHomeScreen = ({ navigation }) => {
       </View>
     );
   }
-
   return (
     <View style={styles.container}>
       <MapView style={styles.map} region={region}>
@@ -309,14 +529,12 @@ const TravellerHomeScreen = ({ navigation }) => {
           </Marker>
         )}
       </MapView>
-
       <TouchableOpacity onPress={toggleMenu}>
         <Image
           source={require("../assets/nav_icon.png")}
           style={[styles.icon, styles.menuIcon]}
         />
       </TouchableOpacity>
-
       {isMenuVisible && (
         <TouchableWithoutFeedback onPress={closeMenu}>
           <Animated.View
@@ -332,26 +550,28 @@ const TravellerHomeScreen = ({ navigation }) => {
                 source={require("../assets/profilePic.jpg")}
                 style={styles.profileImage}
               />
-              <Text style={styles.userName}>Naina Kapoor</Text>
-              <Text style={styles.userEmail}>naina**@gmail.com</Text>
+              <Text style={styles.userName}>{TravelerUserName}</Text>
               <View style={styles.menuOptions}>
-                <TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate("TravelerProfile")}
+                >
                   <Text style={styles.menuOptionText}>Profile</Text>
-                  <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
-                <TouchableOpacity>
-                  <Text style={styles.menuOptionText}>Trip History</Text>
-                  <View style={styles.horizontalRuler2} />
-                </TouchableOpacity>
-                <TouchableOpacity>
+                <View style={styles.horizontalRuler2} />
+
+                <TouchableOpacity onPress={handleOpenWebsite}>
                   <Text style={styles.menuOptionText}>About</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
-                <TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate("HelpScreen")}
+                >
                   <Text style={styles.menuOptionText}>Help</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
-                <TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate("TravelerLogin")}
+                >
                   <Text style={styles.menuOptionText}>Sign Out</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
@@ -375,7 +595,6 @@ const TravellerHomeScreen = ({ navigation }) => {
         source={require("../assets/locateMe_icon.png")}
         style={[styles.icon, styles.locationIcon]}
       />
-
       <View style={styles.overlayContainer}>
         <Text style={styles.heading}>Where To Next?</Text>
         <View style={styles.horizontalLine} />
@@ -396,7 +615,10 @@ const TravellerHomeScreen = ({ navigation }) => {
             />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.optionButtonLarge}>
+          <TouchableOpacity
+            style={styles.optionButtonLarge}
+            onPress={openSearchModal} //openSearchModal
+          >
             <Image
               source={require("../assets/current_location.png")}
               style={styles.optionIcon}
@@ -406,7 +628,7 @@ const TravellerHomeScreen = ({ navigation }) => {
         </View>
         <TouchableOpacity
           style={styles.destinationButton}
-          onPress={openSearchModal}
+          onPress={openSecondSearchModal} //openSecondSearchModal
         >
           <Image
             source={require("../assets/loc.png")}
@@ -415,11 +637,9 @@ const TravellerHomeScreen = ({ navigation }) => {
           <Text style={styles.destinationText}>Select Destination</Text>
         </TouchableOpacity>
       </View>
-
       <View style={styles.bottomNav}>
-        <BottomNav activeTab={activeTab} onTabPress={handleTabPress} />
+        <TravelerBottomNav activeTab={activeTab} onTabPress={handleTabPress} />
       </View>
-
       {showRadioButtons && dropdownPosition && (
         <View
           style={[
@@ -430,6 +650,7 @@ const TravellerHomeScreen = ({ navigation }) => {
           {renderRadioButton("Now")}
           {renderRadioButton("Later")}
           {renderRadioButton("Tomorrow")}
+          {renderRadioButton("Custom Date")}
         </View>
       )}
       <Modal visible={modalVisible} animationType="slide" transparent={true}>
@@ -477,6 +698,72 @@ const TravellerHomeScreen = ({ navigation }) => {
                 </TouchableOpacity>
               )}
             />
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      <Modal
+        visible={modalSecondVisible}
+        animationType="slide"
+        transparent={true}
+      >
+        <TouchableWithoutFeedback
+          onPress={() => {
+            setModalSecondVisible(false); // Close the modal on outside touch
+            Keyboard.dismiss(); // Dismiss the keyboard if it's open
+          }}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.horizontalRuler1} />
+            <Text style={styles.heading}>Select address</Text>
+            <View style={styles.horizontalRuler} />
+
+            {/* Display Current Address in First Input Box */}
+            <View style={styles.searchContainer}>
+              <ScrollView
+                horizontal={true}
+                showsHorizontalScrollIndicator={false}
+              >
+                <Text
+                  style={{
+                    color: "black",
+                    fontSize: 13,
+                    fontFamily: "poppins",
+                  }}
+                >
+                  {currentAddress}
+                </Text>
+              </ScrollView>
+            </View>
+
+            <View style={styles.searchContainer}>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Select Destination"
+                value={searchQuery2}
+                onChangeText={(query) => handleSearch2(query)} // Fetch suggestions dynamically
+              />
+            </View>
+
+            {/* Suggestions for Destination */}
+            {suggestions.length > 0 ? (
+              <FlatList
+                data={suggestions}
+                keyExtractor={(item) => item.id || item.place_name}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.suggestionItem}
+                    onPress={() => selectSuggestion2(item)}
+                  >
+                    <Text style={styles.suggestionText}>{item.place_name}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            ) : (
+              <Text style={styles.noSuggestionsText}>
+                No suggestions available.
+              </Text>
+            )}
           </View>
         </TouchableWithoutFeedback>
       </Modal>
@@ -701,15 +988,6 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: "white",
   },
-  radioButtonsContainer: {
-    position: "absolute",
-    bottom: 70,
-    left: 0,
-    backgroundColor: "white",
-    borderTopWidth: 1,
-    borderTopColor: "#d3d3d3",
-    padding: 10,
-  },
   radioButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -774,6 +1052,7 @@ const styles = StyleSheet.create({
     fontFamily: "poppins",
     marginLeft: 10,
     marginRight: 20,
+    color: "black",
   },
   suggestionItem: {
     padding: 10,
@@ -813,21 +1092,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "poppins",
   },
-  radioButtonsContainer: {
-    position: "absolute",
-    top: "30%",
-    left: "10%",
-    right: "10%",
-    backgroundColor: "white",
-    padding: 20,
-    borderRadius: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.8,
-    shadowRadius: 2,
-    fontFamily: "poppins",
-    elevation: 5,
-  },
+
   radioButtonContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -915,20 +1180,14 @@ const styles = StyleSheet.create({
   profileImage: {
     width: 80,
     height: 80,
-    top: 25,
+    top: "10%",
     borderRadius: 40,
     marginBottom: 30,
   },
   userName: {
     fontSize: 20,
     fontFamily: "poppins",
-  },
-  userEmail: {
-    fontSize: 10,
-    color: "gray",
-    fontFamily: "poppins",
-
-    marginBottom: 30,
+    marginTop: "20%",
   },
 
   menuOptionText: {
@@ -937,6 +1196,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     fontFamily: "poppins",
     paddingVertical: 10,
+    marginTop: 50,
   },
 });
 

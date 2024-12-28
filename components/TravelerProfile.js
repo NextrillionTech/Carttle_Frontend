@@ -25,7 +25,6 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState("");
   const [isMenuVisible, setMenuVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(-300)).current;
-  const [userName, setUserName] = useState("");
   const [profileData, setProfileData] = useState({});
 
   const [email, setEmail] = useState("");
@@ -34,12 +33,36 @@ export default function Profile() {
   const [musicTaste, setMusicTaste] = useState("");
   const [drivingStyle, setDrivingStyle] = useState("");
 
-  const [phoneNumber, setPhoneNumber] = useState(null);
-  const [userId, setUserId] = useState(null);
+  const [TravelerUserId, setTravelerUserId] = useState(null);
+  const [TravelerUserName, setTravelerUserName] = useState(null);
+  const [TraveleruserMobile, setTraveleruserMobile] = useState(null);
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        // Retrieve user ID and name from AsyncStorage
+        const storedTravelerUserId = await AsyncStorage.getItem(
+          "TraveleruserId"
+        );
+        const storedTraveleruserMobile = await AsyncStorage.getItem(
+          "TraveleruserMobile"
+        );
+        const storedTravelerUserName = await AsyncStorage.getItem(
+          "TraveleruserName"
+        );
+        if (storedTravelerUserId && storedTravelerUserName) {
+          setTravelerUserId(storedTravelerUserId); // Correctly set TravelerUserId
+          setTravelerUserName(storedTravelerUserName); // Correctly set TravelerUserName
+          setTraveleruserMobile(storedTraveleruserMobile);
+        } else {
+          console.log("User data not found");
+        }
+      } catch (error) {
+        console.error("Error retrieving data from AsyncStorage:", error);
+      }
+    };
 
-  const [dlnumber, setDlnumber] = useState(null);
-  const [carRegNumber, setCarRegNumber] = useState(null);
-  const [dob, setDob] = useState(null);
+    loadUserData();
+  }, []);
 
   const handleOpenWebsite = () => {
     const url = "https://nextrilliontech.infinityfreeapp.com/";
@@ -51,30 +74,11 @@ export default function Profile() {
   const navigation = useNavigation();
 
   useEffect(() => {
-    const getUserId = async () => {
-      try {
-        // Retrieve the userId from AsyncStorage
-        const id = await AsyncStorage.getItem("userId");
-        if (id !== null) {
-          setUserId(id); // Set the userId to the state
-          console.log(" user ID found IN PROFILE SCREEN", userId);
-        } else {
-          console.log("No user ID found");
-        }
-      } catch (error) {
-        console.error("Error fetching user ID from AsyncStorage", error);
-      }
-    };
-
-    getUserId(); // Call the function when the screen loads
-  }, []);
-
-  useEffect(() => {
-    if (userId) {
+    if (TravelerUserId) {
       const fetchProfileData = async () => {
         try {
           const response = await fetch(
-            `http://192.168.43.235:3000/user-info/${userId}`
+            `http://192.168.29.99:3000/user-info/${TravelerUserId}`
           );
 
           // Check if the response is not okay (e.g., 404 or 500)
@@ -87,13 +91,6 @@ export default function Profile() {
           try {
             const data = JSON.parse(textResponse); // Try parsing as JSON
             if (data) {
-              setPhoneNumber(data.mobile);
-              setDlnumber(data.dlNumber);
-              setCarRegNumber(data.carRegNo);
-              setDob(data.dob);
-              setUserName(data.name); // Set user name if needed
-              setProfileData(data.data); // This will assign the "data" field to profileData.
-
               console.log("Profile Data Fetched Successfully:", data); // Log the fetched data
             }
           } catch (parseError) {
@@ -112,14 +109,14 @@ export default function Profile() {
 
       fetchProfileData();
     }
-  }, [userId]);
+  }, [TravelerUserId]);
 
   const handleTabPress = (tab) => {
     setActiveTab(tab);
     if (tab === "home") {
-      navigation.navigate("HomeScreen");
+      navigation.navigate("TravellerHomeScreen");
     } else if (tab === "rides") {
-      navigation.navigate("RidesScreen");
+      navigation.navigate("RideList");
     } else if (tab === "message") {
       navigation.navigate("MessageScreen");
     }
@@ -193,7 +190,7 @@ export default function Profile() {
     }
 
     try {
-      const response = await fetch("http://192.168.43.235:3000/update-user", {
+      const response = await fetch("http://192.168.29.99:3000/update-user", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -204,7 +201,7 @@ export default function Profile() {
           personalityType,
           musicTaste,
           drivingStyle,
-          userId: userId,
+          userId: TravelerUserId,
         }),
       });
 
@@ -257,27 +254,7 @@ export default function Profile() {
 
         <View style={styles.userDetailContainer}>
           <Text style={styles.userDetail}>Mobile Number :</Text>
-          <Text style={styles.userDetailValue}>
-            {profileData?.phone_number || "N/A"}
-          </Text>
-        </View>
-        <View style={styles.userDetailContainer}>
-          <Text style={styles.userDetail}>DL Number :</Text>
-          <Text style={styles.userDetailValue}>
-            {profileData?.dl_number || "N/A"}
-          </Text>
-        </View>
-        <View style={styles.userDetailContainer}>
-          <Text style={styles.userDetail}>Car Registration No. :</Text>
-          <Text style={styles.userDetailValue}>
-            {profileData?.reg_number || "N/A"}
-          </Text>
-        </View>
-        <View style={styles.userDetailContainer}>
-          <Text style={styles.userDetail}>Date of Birth :</Text>
-          <Text style={styles.userDetailValue}>
-            {profileData?.dob || "N/A"}
-          </Text>
+          <Text style={styles.userDetailValue}>{TraveleruserMobile}</Text>
         </View>
       </View>
 

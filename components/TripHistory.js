@@ -12,7 +12,7 @@ import {
   Animated,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import BottomNav from "./BottomNav";
+import TravelerBottomNav from "./BottomNav";
 
 const RideCard = ({ ride }) => (
   <View style={styles.card}>
@@ -22,47 +22,33 @@ const RideCard = ({ ride }) => (
         style={styles.profilePic}
       />
       <View style={styles.rideInfo}>
-        <Text style={styles.name}>{ride.name}</Text>
-        <Text style={styles.location}>{ride.location1}</Text>
-        <Text style={styles.location}>{ride.location2}</Text>
+        {/* username */}
+
+        <Text style={styles.name}>{}</Text>
+        {/* origin */}
+        <Text style={styles.location}>{}</Text>
+        {/* destination */}
+
+        <Text style={styles.location}>{}</Text>
       </View>
-      <View style={styles.statusContainer}>
-        <Text
-          style={
-            ride.currentStatus === "Current Trip"
-              ? styles.statusActive
-              : styles.status
-          }
-        >
-          {ride.currentStatus}
-        </Text>
-      </View>
+      <View style={styles.statusContainer}></View>
     </View>
     <View style={styles.cardBody}>
       <View style={styles.detailsRow}>
-        <Text style={styles.detailsLabel}>Earnings</Text>
+        <Text style={styles.detailsLabel}>Paid</Text>
         <Text style={styles.detailsValue}>{ride.earning}</Text>
       </View>
       <View style={styles.detailsRow}>
-        <Text style={styles.detailsLabel}>Review</Text>
-        <Text style={styles.detailsValue}>{ride.review}</Text>
-      </View>
-      <View style={styles.detailsRow}>
         <Text style={styles.detailsLabel}>Timestamp</Text>
-        <Text style={styles.detailsValue}>{ride.timestamp}</Text>
+        <Text style={styles.detailsValue}>{}</Text>
       </View>
     </View>
     {/* Conditionally render the "View Earnings Breakup" button */}
-    {ride.currentStatus === "Completed" && (
-      <TouchableOpacity style={styles.earningsButton}>
-        <Text style={styles.earningsText}>View Earnings Breakup</Text>
-      </TouchableOpacity>
-    )}
   </View>
 );
 
-const RidesScreen = ({ navigation }) => {
-  const [activeTab, setActiveTab] = useState("RidesScreen");
+const TripHistory = ({ navigation }) => {
+  const [activeTab, setActiveTab] = useState("rides");
   const [originName, setOriginName] = useState("");
   const [destinationName, setDestinationName] = useState("");
   const [userName, setUserName] = useState("");
@@ -139,26 +125,23 @@ const RidesScreen = ({ navigation }) => {
   // Dynamically create rides array using state variables
   const rides = [
     {
-      id: "1",
       name: userName,
       rating: "",
       location1: originName,
       location2: destinationName,
-      earning: "",
+      Paid: "",
       timestamp: "",
-      review: "",
-      currentStatus: "Current Ride",
     },
   ];
 
   const handleTabPress = (tab) => {
     setActiveTab(tab);
     if (tab === "home") {
-      navigation.navigate("HomeScreen");
+      navigation.navigate("TravellerHomeScreen");
     } else if (tab === "rides") {
-      navigation.navigate("RidesScreen");
+      navigation.navigate("TripHistory");
     } else if (tab === "message") {
-      navigation.navigate("MessageScreen");
+      navigation.navigate("");
     }
   };
 
@@ -171,7 +154,7 @@ const RidesScreen = ({ navigation }) => {
             style={styles.headerIcon}
           />
         </TouchableOpacity>
-        <Text style={styles.headerText}>All Rides</Text>
+        <Text style={styles.headerText}>All Trips</Text>
         <TouchableOpacity>
           <Image
             source={require("../assets/Bell_icon.png")}
@@ -227,7 +210,7 @@ const RidesScreen = ({ navigation }) => {
         </TouchableWithoutFeedback>
       )}
       <View style={styles.bottomNav}>
-        <BottomNav activeTab={activeTab} onTabPress={handleTabPress} />
+        <TravelerBottomNav activeTab={activeTab} onTabPress={handleTabPress} />
       </View>
     </View>
   );
@@ -395,4 +378,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RidesScreen;
+export default TripHistory;

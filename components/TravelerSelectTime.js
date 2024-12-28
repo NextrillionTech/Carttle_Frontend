@@ -23,7 +23,7 @@ import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage"; // Import AsyncStorage
 
-import BottomNav from "./BottomNav";
+import TravelerBottomNav from "./TravelerBottomNav";
 import * as Font from "expo-font";
 
 const fetchFonts = () => {
@@ -36,7 +36,7 @@ const MAPBOX_ACCESS_TOKEN =
   "sk.eyJ1IjoibmV4dHJpbGxpb24tdGVjaCIsImEiOiJjbHpnaHdiaTkxb29xMmpxc3V5bTRxNWNkIn0.l4AsMHEMhAEO90klTb3oCQ";
 const MAPBOX_TILE_URL = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/256/{z}/{x}/{y}@2x?access_token=${MAPBOX_ACCESS_TOKEN}`;
 
-const SelectTimeScreen = ({ navigation, route }) => {
+const TravelerSelectTime = ({ navigation, route }) => {
   const [selectedTimeState, setSelectedTimeState] = useState("Select Time"); // Set it in state
   const [region, setRegion] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
@@ -216,9 +216,9 @@ const SelectTimeScreen = ({ navigation, route }) => {
   const handleTabPress = (tab) => {
     setActiveTab(tab);
     if (tab === "home") {
-      navigation.navigate("HomeScreen");
+      navigation.navigate("TravellerHomeScreen");
     } else if (tab === "rides") {
-      navigation.navigate("RidesScreen");
+      navigation.navigate("TripHistory");
     } else if (tab === "message") {
       navigation.navigate("MessageScreen");
     }
@@ -298,13 +298,19 @@ const SelectTimeScreen = ({ navigation, route }) => {
   const handleDateChange = (event, selectedDate) => {
     setIsDatePickerVisible(false);
     if (selectedDate) {
-      const formatted = selectedDate.toLocaleDateString("en-GB"); // Format DD/MM/YYYY
+      // Format the selected date to DD-MM-YYYY
+      const day = String(selectedDate.getDate()).padStart(2, "0");
+      const month = String(selectedDate.getMonth() + 1).padStart(2, "0"); // Months are 0-indexed
+      const year = selectedDate.getFullYear();
+      const formatted = `${day}-${month}-${year}`;
+
       setCustomDate(formatted);
       setSelectedTimeState(`Custom Date: ${formatted}`);
       setShowRadioButtons(false);
       console.log("Selected Date:", formatted);
     }
   };
+
   useEffect(() => {
     if (route.params?.selectedTime) {
       setSelectedTimeState(route.params.selectedTime);
@@ -313,7 +319,9 @@ const SelectTimeScreen = ({ navigation, route }) => {
 
   const selectTime = async (option) => {
     if (option === "Now") {
-      navigation.navigate("HomeScreen", { selectedTime: (option = "Now") });
+      navigation.navigate("TravellerHomeScreen", {
+        selectedTime: (option = "Now"),
+      });
     } else {
       if (option === "Custom Date") {
         setIsDatePickerVisible(true);
@@ -362,27 +370,6 @@ const SelectTimeScreen = ({ navigation, route }) => {
       console.log("State Name:", stateName);
 
       try {
-        // Call the distance matrix API
-        const response = await axios.post(
-          "http://192.168.29.99:3000/distanceMatrix",
-          data
-        );
-        console.log("Distance:", response.data.distance);
-
-        // Call the cost calculator API
-        const costResponse = await axios.post(
-          "http://192.168.29.99:3000/calculate-cost",
-          {
-            state: stateName,
-            origin: `${userLocation.latitude},${userLocation.longitude}`,
-            destination: `${destinationCoordinates.latitude},${destinationCoordinates.longitude}`,
-          }
-        );
-
-        console.log("Fuel Price:", costResponse.data.fuelPrice);
-        console.log("Total Distance:", costResponse.data.distance);
-        console.log("Total Cost:", costResponse.data.totalCost);
-
         let timeData = {};
 
         const formatDate = (date) => {
@@ -427,21 +414,17 @@ const SelectTimeScreen = ({ navigation, route }) => {
           Alert.alert("Error", "Please select a custom date.");
         }
 
-        navigation.navigate("MapScreen", {
+        navigation.navigate("RideList", {
           destination: destinationCoordinates,
           origin: originCoordinates,
-          distance: response.data.distance,
-          totalCost: costResponse.data.totalCost,
           ...timeData,
           option: selectedTimeState,
           customDate: customDate,
         });
 
-        console.log("Data sent to MapScreen:", {
+        console.log("Data sent to RideList:", {
           destination: destinationCoordinates,
           origin: originCoordinates,
-          distance: costResponse.data.distance,
-          totalCost: costResponse.data.totalCost,
           ...timeData,
           option: selectedTimeState,
           customDate: customDate,
@@ -451,10 +434,7 @@ const SelectTimeScreen = ({ navigation, route }) => {
           "Error sending data to backend:",
           error.response ? error.response.data : error.message
         );
-        Alert.alert(
-          "Error",
-          "Could not calculate distance and cost, please try again."
-        );
+        Alert.alert("Error");
       }
     }
   };
@@ -551,7 +531,7 @@ const SelectTimeScreen = ({ navigation, route }) => {
       />
 
       <View style={styles.overlayContainer}>
-        <Text style={styles.heading}>Where To Take Next?</Text>
+        <Text style={styles.heading}>Where To Next?</Text>
         <View style={styles.horizontalLine} />
         <Text style={styles.heading1}>Select Time and Location</Text>
         <View style={styles.selectionContainer}>
@@ -621,7 +601,7 @@ const SelectTimeScreen = ({ navigation, route }) => {
       </View>
 
       <View style={styles.bottomNav}>
-        <BottomNav activeTab={activeTab} onTabPress={handleTabPress} />
+        <TravelerBottomNav activeTab={activeTab} onTabPress={handleTabPress} />
       </View>
 
       {showRadioButtons && dropdownPosition && (
@@ -1167,4 +1147,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SelectTimeScreen;
+export default TravelerSelectTime;

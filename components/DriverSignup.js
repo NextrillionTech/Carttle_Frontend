@@ -62,7 +62,7 @@ const DriverSignup = () => {
 
     try {
       const response = await fetch(
-        "http://192.168.43.235:3000/auth/api/signup",
+        "http://192.168.29.99:3000/auth/api/signup",
         {
           method: "POST",
           headers: {
@@ -73,6 +73,7 @@ const DriverSignup = () => {
             phonenumber: phone,
             password: password,
             type: "driver",
+            is_driver: "true",
           }),
         }
       );

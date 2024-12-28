@@ -97,14 +97,14 @@ const DriverVerification = () => {
     try {
       // First, verify driving license
       const dlResponse = await axios.post(
-        "http://192.168.43.235:3000/verify-dl",
+        "http://192.168.29.99:3000/verify-dl",
         dlData
       );
 
       if (dlResponse.status === 200) {
         // If DL verification is successful, proceed with RC verification
         const rcResponse = await axios.post(
-          "http://192.168.43.235:3000/verify-rc",
+          "http://192.168.29.99:3000/verify-rc",
           rcData
         );
 
@@ -114,7 +114,7 @@ const DriverVerification = () => {
           await AsyncStorage.setItem("dob", dobFormatted);
           await AsyncStorage.setItem("rc_model", rcResponse.data.data.rc_model); // Storing rc_model in AsyncStorage
           Alert.alert("Success", "Your DL and RC details have been verified!");
-          navigation.navigate("HomeScreen");
+          navigation.navigate("DriverLogin");
         } else {
           Alert.alert(
             "RC Verification Failed",

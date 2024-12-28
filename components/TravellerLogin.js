@@ -39,7 +39,7 @@ const TravellerLogin = () => {
 
     try {
       const response = await fetch(
-        "http://192.168.43.235:3000/auth/api/signin",
+        "http://192.168.29.99:3000/auth/api/signin",
         {
           method: "POST",
           headers: {
@@ -57,12 +57,25 @@ const TravellerLogin = () => {
       if (response.ok) {
         alert("Login successful!");
 
-        // Store user ID in AsyncStorage
-        await AsyncStorage.setItem("userId", data._id); // Assuming data._id is the user ID
+        // Store user ID, name, and mobile number in AsyncStorage
+        await AsyncStorage.setItem("TraveleruserId", data._id); // Assuming data._id is the user ID
+        await AsyncStorage.setItem("TraveleruserName", data.name); // Assuming data.name is the user's name
+        await AsyncStorage.setItem("TraveleruserMobile", phoneNumber); // Storing the phone number
 
-        // Retrieve and log the user ID to check if it's stored
-        const storedUserId = await AsyncStorage.getItem("userId");
-        console.log("Stored User ID:", storedUserId);
+        // Retrieve and log the user ID, name, and mobile number to check if they're stored
+        const storedTravelerUserId = await AsyncStorage.getItem(
+          "TraveleruserId"
+        );
+        const storedTravelerUserName = await AsyncStorage.getItem(
+          "TraveleruserName"
+        );
+        const storedTravelerUserMobile = await AsyncStorage.getItem(
+          "TraveleruserMobile"
+        );
+
+        console.log("Stored Traveler User ID:", storedTravelerUserId);
+        console.log("Stored Traveler User Name:", storedTravelerUserName);
+        console.log("Stored Traveler User Mobile:", storedTravelerUserMobile);
 
         navigation.navigate("TravellerHomeScreen"); // Navigate to home screen after login
       } else {

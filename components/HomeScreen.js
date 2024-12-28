@@ -42,13 +42,14 @@ const MAPBOX_ACCESS_TOKEN =
   "sk.eyJ1IjoibmV4dHJpbGxpb24tdGVjaCIsImEiOiJjbHpnaHdiaTkxb29xMmpxc3V5bTRxNWNkIn0.l4AsMHEMhAEO90klTb3oCQ";
 const MAPBOX_TILE_URL = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/256/{z}/{x}/{y}@2x?access_token=${MAPBOX_ACCESS_TOKEN}`;
 
-const HomeScreen = ({ navigation }) => {
+const HomeScreen = ({ route, navigation }) => {
   const [region, setRegion] = useState(null);
+
+  const [selectedTime, setSelectedTime] = useState("Select Time");
   const [userLocation, setUserLocation] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   const [activeTab, setActiveTab] = useState("home");
   const [showRadioButtons, setShowRadioButtons] = useState(false);
-  const [selectedTime, setSelectedTime] = useState("Now");
   const [userName, setUserName] = useState("");
 
   const [modalVisible, setModalVisible] = useState(false); //MODAL FOR SELECTING SCREEN FOR DIFFERENT ORIGIN AND DEST
@@ -240,13 +241,20 @@ const HomeScreen = ({ navigation }) => {
       navigation.navigate("MessageScreen");
     }
   };
-
+  useEffect(() => {
+    if (route.params?.selectedTime) {
+      setSelectedTime(route.params.selectedTime);
+    }
+  }, [route.params]);
   const selectTime = async (time) => {
     setSelectedTime(time);
     setShowRadioButtons(false);
     if (time === "Now") {
       // Store 'Now' in AsyncStorage
+
       try {
+        navigation.navigate("HomeScreen"); // Navigate to HomeScreen
+
         await AsyncStorage.setItem("selectedTime", time);
         console.log("Stored 'Now' in AsyncStorage");
       } catch (error) {
@@ -255,7 +263,9 @@ const HomeScreen = ({ navigation }) => {
     }
 
     // Navigate to the desired screen with the selected time as a parameter
-    navigation.navigate("SelectTimeScreen", { selectedTime: time });
+    else {
+      navigation.navigate("SelectTimeScreen", { selectedTime: time });
+    }
   };
 
   const openSearchModal = () => {
@@ -365,14 +375,14 @@ const HomeScreen = ({ navigation }) => {
       try {
         // Call the distance matrix API
         const response = await axios.post(
-          "http://192.168.43.235:3000/distanceMatrix",
+          "http://192.168.29.99:3000/distanceMatrix",
           data
         );
         console.log("Distance:", response.data.distance);
 
         // Call the cost calculator API
         const costResponse = await axios.post(
-          "http://192.168.43.235:3000/calculate-cost",
+          "http://192.168.29.99:3000/calculate-cost",
           {
             state: stateName,
             origin: `${userLocation.latitude},${userLocation.longitude}`,
@@ -435,14 +445,14 @@ const HomeScreen = ({ navigation }) => {
     try {
       // Call the distance matrix API
       const response = await axios.post(
-        "http://192.168.43.235:3000/distanceMatrix",
+        "http://192.168.29.99:3000/distanceMatrix",
         data
       );
       console.log("Distance:", response.data.distance);
 
       // Call the cost calculator API
       const costResponse = await axios.post(
-        "http://192.168.43.235:3000/calculate-cost",
+        "http://192.168.29.99:3000/calculate-cost",
         {
           state: stateName,
           origin: `${currentLocLatitude},${currentLocLongitude}`, // Use origin from current location variables
@@ -532,11 +542,9 @@ const HomeScreen = ({ navigation }) => {
                   onPress={() => navigation.navigate("Profile")}
                 >
                   <Text style={styles.menuOptionText}>Profile</Text>
-                  <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
-                <TouchableOpacity>
-                  <View style={styles.horizontalRuler2} />
-                </TouchableOpacity>
+                <View style={styles.horizontalRuler2} />
+
                 <TouchableOpacity onPress={handleOpenWebsite}>
                   <Text style={styles.menuOptionText}>About</Text>
                   <View style={styles.horizontalRuler2} />
@@ -547,7 +555,9 @@ const HomeScreen = ({ navigation }) => {
                   <Text style={styles.menuOptionText}>Help</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
-                <TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate("DriverLogin")}
+                >
                   <Text style={styles.menuOptionText}>Sign Out</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
@@ -593,7 +603,7 @@ const HomeScreen = ({ navigation }) => {
 
           <TouchableOpacity
             style={styles.optionButtonLarge}
-            onPress={openSecondSearchModal}
+            onPress={openSearchModal}
           >
             <Image
               source={require("../assets/current_location.png")}
@@ -604,7 +614,7 @@ const HomeScreen = ({ navigation }) => {
         </View>
         <TouchableOpacity
           style={styles.destinationButton}
-          onPress={openSearchModal}
+          onPress={openSecondSearchModal}
         >
           <Image
             source={require("../assets/loc.png")}
@@ -1156,20 +1166,14 @@ const styles = StyleSheet.create({
   profileImage: {
     width: 80,
     height: 80,
-    top: 25,
+    top: "10%",
     borderRadius: 40,
     marginBottom: 30,
   },
   userName: {
     fontSize: 20,
     fontFamily: "poppins",
-  },
-  userEmail: {
-    fontSize: 10,
-    color: "gray",
-    fontFamily: "poppins",
-
-    marginBottom: 30,
+    marginTop: "20%",
   },
 
   menuOptionText: {
@@ -1178,6 +1182,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     fontFamily: "poppins",
     paddingVertical: 10,
+    marginTop: 50,
   },
 });
 

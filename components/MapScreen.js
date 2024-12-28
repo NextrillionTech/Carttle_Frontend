@@ -468,6 +468,26 @@ const MapScreen = ({ route }) => {
         latitude: location.latitude, // Latitude second
       });
 
+      // Function to format time in HH:mm (24-hour format)
+      const formatTo24hrTime = (time) => {
+        const match = time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+        if (match) {
+          let [_, hours, minutes, period] = match;
+          hours = parseInt(hours, 10);
+          // Convert PM hours (except for 12 PM which remains the same)
+          if (period.toUpperCase() === "PM" && hours !== 12) {
+            hours += 12; // Convert PM hours
+          }
+          // Convert 12 AM to 00
+          else if (period.toUpperCase() === "AM" && hours === 12) {
+            hours = 0; // Convert 12 AM to 00
+          }
+          // Return the time in 24-hour format (HH:mm)
+          return `${String(hours).padStart(2, "0")}:${minutes}`;
+        }
+        return time; // Return as is if already in 24-hour format
+      };
+
       if (commuteRegularly) {
         console.log("modalCommuteRegularly is true");
 
@@ -495,8 +515,8 @@ const MapScreen = ({ route }) => {
                 option === "Custom Date" ||
                 option === "Tomorrow"
                   ? route.params.formattedTime ||
-                    convert12hrTo24hrFormat(formattedTime) // Convert 12hr to 24hr if needed
-                  : formatTime(time),
+                    formatTo24hrTime(formattedTime)
+                  : formatTo24hrTime(formatTime(time)), // Convert time to 24-hour format
             },
           };
         } else {
@@ -523,9 +543,9 @@ const MapScreen = ({ route }) => {
                 option === "Custom Date" ||
                 option === "Tomorrow"
                   ? route.params.formattedTime ||
-                    convert12hrTo24hrFormat(formattedTime)
-                  : formatTime(time),
-              round_trip_time: convert12hrTo24hrFormat(time1), // Convert time for round trip to 24hr format
+                    formatTo24hrTime(formattedTime)
+                  : formatTo24hrTime(formatTime(time)),
+              round_trip_time: formatTo24hrTime(time1), // Convert time for round trip to 24-hour format
             },
           };
         }
@@ -558,9 +578,8 @@ const MapScreen = ({ route }) => {
               option === "Later" ||
               option === "Custom Date" ||
               option === "Tomorrow"
-                ? route.params.formattedTime ||
-                  convert12hrTo24hrFormat(formattedTime)
-                : formatTime(time),
+                ? route.params.formattedTime || formatTo24hrTime(formattedTime)
+                : formatTo24hrTime(formatTime(time)), // Format the time
           },
         };
       }

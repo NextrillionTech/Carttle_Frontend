@@ -19,6 +19,7 @@ import { Picker } from "@react-native-picker/picker";
 import AsyncStorage from "@react-native-async-storage/async-storage"; // Import AsyncStorage
 import BottomNav from "./BottomNav";
 import * as ImagePicker from "expo-image-picker";
+import axios from "axios";
 
 export default function Profile() {
   const [selectedImage, setSelectedImage] = useState(null);
@@ -27,6 +28,7 @@ export default function Profile() {
   const slideAnim = useRef(new Animated.Value(-300)).current;
   const [userName, setUserName] = useState("");
   const [profileData, setProfileData] = useState({});
+  const [profilePic, setProfilePic] = useState(null);
 
   const [email, setEmail] = useState("");
   const [gender, setGender] = useState("");
@@ -160,7 +162,6 @@ export default function Profile() {
       setMenuVisible(false);
     });
   };
-
   const openImagePicker = async () => {
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -178,7 +179,49 @@ export default function Profile() {
     });
 
     if (!result.canceled) {
-      setSelectedImage(result.assets[0].uri);
+      const selectedUri = result.assets[0].uri;
+      const imageName = selectedUri.split("/").pop(); // Extracts the file name from the URI
+      setSelectedImage(selectedUri);
+
+      const imageUrl = await uploadImageToCloudinary(selectedUri, imageName);
+      console.log("Image URL:", imageUrl);
+      if (imageUrl) {
+        setProfilePic(imageUrl); // Store the image URL in the profilePic state
+      }
+    }
+  };
+  const uploadImageToCloudinary = async (uri, imageName) => {
+    try {
+      const data = new FormData();
+      const localUri = uri.startsWith("file://") ? uri : "file://" + uri;
+      data.append("file", {
+        uri: localUri,
+        type: "image/jpeg",
+        name: imageName,
+      });
+      data.append("upload_preset", "carttle");
+      data.append("cloud_name", "dvirfazqd");
+
+      const response = await fetch(
+        "https://api.cloudinary.com/v1_1/dvirfazqd/image/upload",
+        {
+          method: "POST",
+          body: data,
+          headers: {
+            Accept: "application/json",
+          },
+        }
+      );
+      const responseData = await response.json();
+
+      if (responseData.secure_url) {
+        const imageUrl = responseData.secure_url;
+        await AsyncStorage.setItem("profilePic", imageUrl); // Save the URL in AsyncStorage
+        return imageUrl; // Return the URL of the uploaded image
+      }
+    } catch (error) {
+      console.error("Error uploading image to Cloudinary:", error);
+      return null;
     }
   };
 
@@ -187,7 +230,14 @@ export default function Profile() {
   };
 
   const handleSave = async () => {
-    if (!email || !gender || !personalityType || !musicTaste || !drivingStyle) {
+    if (
+      !email ||
+      !gender ||
+      !personalityType ||
+      !musicTaste ||
+      !drivingStyle ||
+      !profilePic
+    ) {
       Alert.alert("Error", "Please fill all the fields before saving.");
       return;
     }
@@ -205,6 +255,7 @@ export default function Profile() {
           musicTaste,
           drivingStyle,
           userId: userId,
+          profilePic,
         }),
       });
 
@@ -369,10 +420,7 @@ export default function Profile() {
             ]}
           >
             <View style={styles.menuBackground}>
-              <Image
-                source={require("../assets/profilePic.jpg")}
-                style={styles.profileImage}
-              />
+              <Image source={{ uri: profilePic }} style={styles.profileImage} />
               <Text style={styles.userName}>{userName}</Text>
               <View style={styles.menuOptions}>
                 <TouchableOpacity

@@ -57,14 +57,21 @@ const DriverLogin = () => {
       if (response.ok) {
         alert("Login successful!");
 
-        // Store user ID in AsyncStorage
-        await AsyncStorage.setItem("userId", data._id); // Assuming data._id is the user ID
-        await AsyncStorage.setItem("phoneNumber", phoneNumber);
+        // Store driver details in AsyncStorage
+        await AsyncStorage.setItem("driverUserId", data._id); // Assuming data._id is the Driver User ID
+        await AsyncStorage.setItem("driverName", data.name); // Assuming data.name is the Driver Name
+        await AsyncStorage.setItem("driverPhoneNumber", phoneNumber); // Assuming phoneNumber is the Driver Mobile Number
 
-        const storedUserId = await AsyncStorage.getItem("userId");
-        const storedPhoneNumber = await AsyncStorage.getItem("phoneNumber");
-        console.log("Stored User ID:", storedUserId);
-        console.log("Stored Phone Number:", storedPhoneNumber);
+        // Retrieve and log stored driver details
+        const storedDriverUserId = await AsyncStorage.getItem("driverUserId");
+        const storedDriverName = await AsyncStorage.getItem("driverName");
+        const storedDriverPhoneNumber = await AsyncStorage.getItem(
+          "driverPhoneNumber"
+        );
+
+        console.log("Stored Driver User ID:", storedDriverUserId);
+        console.log("Stored Driver Name:", storedDriverName);
+        console.log("Stored Driver Phone Number:", storedDriverPhoneNumber);
 
         navigation.navigate("HomeScreen"); // Navigate to home screen after login
       } else {

@@ -51,7 +51,7 @@ const HomeScreen = ({ route, navigation }) => {
   const [activeTab, setActiveTab] = useState("home");
   const [showRadioButtons, setShowRadioButtons] = useState(false);
   const [userName, setUserName] = useState("");
-
+  const [profilePic, setProfilePic] = useState(null);
   const [modalVisible, setModalVisible] = useState(false); //MODAL FOR SELECTING SCREEN FOR DIFFERENT ORIGIN AND DEST
 
   const [modalSecondVisible, setModalSecondVisible] = useState(false); //MODAL FOR SELECTING SCREEN FOR current ORIGIN AND DEST
@@ -73,7 +73,16 @@ const HomeScreen = ({ route, navigation }) => {
   const [stateName, setStateName] = useState(""); // Use state instead of a simple variable
 
   const [originCoordinates, setOriginCoordinates] = useState(null); // Add this to track the origin
+  useEffect(() => {
+    const getProfilePic = async () => {
+      const savedProfilePic = await AsyncStorage.getItem("profilePic");
+      if (savedProfilePic) {
+        setProfilePic(savedProfilePic); // Set the profile picture URL from AsyncStorage
+      }
+    };
 
+    getProfilePic(); // Fetch the profile picture on component mount
+  }, []);
   useEffect(() => {
     if (modalSecondVisible && userLocation) {
       fetchCurrentAddress();
@@ -532,10 +541,7 @@ const HomeScreen = ({ route, navigation }) => {
             ]}
           >
             <View style={styles.menuBackground}>
-              <Image
-                source={require("../assets/profilePic.jpg")}
-                style={styles.profileImage}
-              />
+              <Image source={{ uri: profilePic }} style={styles.profileImage} />
               <Text style={styles.userName}>{userName}</Text>
               <View style={styles.menuOptions}>
                 <TouchableOpacity
@@ -556,7 +562,7 @@ const HomeScreen = ({ route, navigation }) => {
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={() => navigation.navigate("DriverLogin")}
+                  onPress={() => navigation.navigate("DriverWelcome")}
                 >
                   <Text style={styles.menuOptionText}>Sign Out</Text>
                   <View style={styles.horizontalRuler2} />

@@ -13,6 +13,7 @@ import axios from "axios";
 import { useNavigation } from "@react-navigation/native";
 import * as Font from "expo-font";
 import DropDownPicker from "react-native-dropdown-picker";
+import AsyncStorage from "@react-native-async-storage/async-storage"; // Import sAsyncStorage
 
 const { width, height } = Dimensions.get("window");
 
@@ -71,7 +72,7 @@ const TravellerSignup = () => {
             name: name,
             phonenumber: phone,
             password: password,
-            type: "passenger",
+            is_driver: "false",
           }),
         }
       );
@@ -80,8 +81,11 @@ const TravellerSignup = () => {
 
       if (response.ok) {
         // Account created successfully
+        await AsyncStorage.setItem("isLoggedIn", "true");
+        await AsyncStorage.setItem("userType", "traveller");
+
         alert("Account created successfully!");
-        navigation.navigate("TravellerLogin");
+        navigation.navigate("TravellerHomeScreen");
       } else {
         // Handle errors returned from the backend
         alert(data.msg || "Something went wrong, please try again.");

@@ -44,6 +44,7 @@ const MAPBOX_TILE_URL = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/til
 
 const TravellerHomeScreen = ({ route, navigation }) => {
   const [region, setRegion] = useState(null);
+  const [travelerprofilePic, setTravelerProfilePic] = useState(null);
 
   const [selectedTime, setSelectedTime] = useState("Select Time");
   const [userLocation, setUserLocation] = useState(null);
@@ -74,6 +75,18 @@ const TravellerHomeScreen = ({ route, navigation }) => {
   const [stateName, setStateName] = useState(""); // Use state instead of a simple variable
 
   const [originCoordinates, setOriginCoordinates] = useState(null); // Add this to track the origin
+
+  useEffect(() => {
+    const getProfilePic = async () => {
+      const savedProfilePic = await AsyncStorage.getItem("travelerprofilePic");
+      if (savedProfilePic) {
+        setTravelerProfilePic(savedProfilePic); // Set the profile picture URL from AsyncStorage
+      }
+    };
+
+    getProfilePic(); // Fetch the profile picture on component mount
+  }, []);
+
   useEffect(() => {
     const loadUserData = async () => {
       try {
@@ -547,7 +560,7 @@ const TravellerHomeScreen = ({ route, navigation }) => {
           >
             <View style={styles.menuBackground}>
               <Image
-                source={require("../assets/profilePic.jpg")}
+                source={{ uri: travelerprofilePic }}
                 style={styles.profileImage}
               />
               <Text style={styles.userName}>{TravelerUserName}</Text>
@@ -570,7 +583,7 @@ const TravellerHomeScreen = ({ route, navigation }) => {
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={() => navigation.navigate("TravelerLogin")}
+                  onPress={() => navigation.navigate("TravellerWecome")}
                 >
                   <Text style={styles.menuOptionText}>Sign Out</Text>
                   <View style={styles.horizontalRuler2} />

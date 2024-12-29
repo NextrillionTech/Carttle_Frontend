@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -7,9 +7,12 @@ import {
   ScrollView,
   StyleSheet,
   FlatList,
+  Animated,
   Modal,
 } from "react-native";
-import BottomNav from "./BottomNav"; // Ensure BottomNav is correctly imported
+import AsyncStorage from "@react-native-async-storage/async-storage"; // Import AsyncStorage
+
+import TravelerBottomNavBottomNav from "./TravelerBottomNav"; // Ensure BottomNav is correctly imported
 import { useNavigation } from "@react-navigation/native";
 import * as Font from "expo-font";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -23,6 +26,9 @@ function fetchFonts() {
 const RideList = ({ route }) => {
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState("rides");
+  const [TravelerUserId, setTravelerUserId] = useState(null);
+  const [TravelerUserName, setTravelerUserName] = useState(null);
+  const [isMenuVisible, setMenuVisible] = useState(false);
 
   const {
     destination,
@@ -50,6 +56,31 @@ const RideList = ({ route }) => {
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [formattedDate, setFormattedDate] = useState("");
+  const slideAnim = useRef(new Animated.Value(-300)).current; // Start off-screen
+
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        // Retrieve user ID and name from AsyncStorage
+        const storedTravelerUserId = await AsyncStorage.getItem(
+          "TraveleruserId"
+        );
+        const storedTravelerUserName = await AsyncStorage.getItem(
+          "TraveleruserName"
+        );
+        if (storedTravelerUserId && storedTravelerUserName) {
+          setTravelerUserId(storedTravelerUserId); // Correctly set TravelerUserId
+          setTravelerUserName(storedTravelerUserName); // Correctly set TravelerUserName
+        } else {
+          console.log("User data not found");
+        }
+      } catch (error) {
+        console.error("Error retrieving data from AsyncStorage:", error);
+      }
+    };
+
+    loadUserData();
+  }, []);
 
   const convertToISOFormat = (dateStr) => {
     const [day, month, year] = dateStr.split("-");
@@ -129,12 +160,34 @@ const RideList = ({ route }) => {
     gender: ["Male", "Female", "Others"],
   };
 
+  const closeMenu = () => {
+    Animated.timing(slideAnim, {
+      toValue: -300, // Slide out to the left
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setMenuVisible(false);
+    });
+  };
+
   const handleFilterPress = (filter, event) => {
     setActiveFilter(filter);
     setDropdownOptions(dropdownValues[filter]);
     const { pageX, pageY } = event.nativeEvent;
     setDropdownPosition({ x: pageX, y: pageY });
     setShowDropdown(true);
+  };
+  const toggleMenu = () => {
+    if (isMenuVisible) {
+      closeMenu();
+    } else {
+      setMenuVisible(true);
+      Animated.timing(slideAnim, {
+        toValue: 0, // Slide in to the center
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
   };
 
   const handleRequestPress = () => {
@@ -293,7 +346,7 @@ const RideList = ({ route }) => {
     return (
       <View style={styles.container}>
         <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={openMenu}>
+          <TouchableOpacity onPress={toggleMenu}>
             <Image
               source={require("../assets/nav_icon.png")}
               style={styles.icon}
@@ -445,12 +498,56 @@ const RideList = ({ route }) => {
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={openMenu}>
+        <TouchableOpacity onPress={toggleMenu}>
           <Image
             source={require("../assets/nav_icon.png")}
             style={styles.icon}
           />
         </TouchableOpacity>
+        {isMenuVisible && (
+          <TouchableWithoutFeedback onPress={closeMenu}>
+            <Animated.View
+              style={[
+                styles.sideMenu,
+                {
+                  transform: [{ translateX: slideAnim }],
+                },
+              ]}
+            >
+              <View style={styles.menuBackground}>
+                <Image
+                  source={require("../assets/profilePic.jpg")}
+                  style={styles.profileImage}
+                />
+                <Text style={styles.userName}>{TravelerUserName}</Text>
+                <View style={styles.menuOptions}>
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate("TravelerProfile")}
+                  >
+                    <Text style={styles.menuOptionText}>Profile</Text>
+                    <View style={styles.horizontalRuler2} />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={handleOpenWebsite}>
+                    <Text style={styles.menuOptionText}>About</Text>
+                    <View style={styles.horizontalRuler2} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate("HelpScreen")}
+                  >
+                    <Text style={styles.menuOptionText}>Help</Text>
+                    <View style={styles.horizontalRuler2} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate("TravellerLogin")}
+                  >
+                    <Text style={styles.menuOptionText}>Sign Out</Text>
+                    <View style={styles.horizontalRuler2} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Animated.View>
+          </TouchableWithoutFeedback>
+        )}
 
         <TouchableOpacity onPress={openNotifications}>
           <Image
@@ -466,7 +563,7 @@ const RideList = ({ route }) => {
         keyExtractor={(item) => item.id}
       />
       <View style={styles.bottomNav}>
-        <BottomNav activeTab={activeTab} onTabPress={handleTabPress} />
+        <TravelerBottomNav activeTab={activeTab} onTabPress={handleTabPress} />
       </View>
     </View>
   );
@@ -669,6 +766,49 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderTopWidth: 1,
     borderColor: "#ccc",
+  },
+  sideMenu: {
+    position: "absolute",
+    top: 0,
+    elevation: 5,
+    zIndex: 2,
+    backgroundColor: "white",
+    width: "60%",
+    height: "100%",
+    borderTopRightRadius: 50,
+    borderBottomRightRadius: 50,
+    left: 0,
+    alignItems: "center",
+  },
+
+  horizontalRuler2: {
+    width: "150%", // Adjust this to control the width of the ruler
+    height: 1,
+    backgroundColor: "#d3d3d3", // Grey color
+    alignSelf: "center", // Center align the ruler
+    marginVertical: 10, // Optional: Adjust vertical spacing
+  },
+
+  profileImage: {
+    width: 80,
+    height: 80,
+    top: "10%",
+    borderRadius: 40,
+    marginBottom: 30,
+  },
+  userName: {
+    fontSize: 20,
+    fontFamily: "poppins",
+    marginTop: "20%",
+  },
+
+  menuOptionText: {
+    fontSize: 18,
+    alignContent: "center",
+    alignItems: "center",
+    fontFamily: "poppins",
+    paddingVertical: 10,
+    marginTop: 50,
   },
 });
 

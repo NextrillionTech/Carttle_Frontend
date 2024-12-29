@@ -26,6 +26,7 @@ export default function Profile() {
   const [isMenuVisible, setMenuVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(-300)).current;
   const [profileData, setProfileData] = useState({});
+  const [travelerprofilePic, setTravelerProfilePic] = useState(null);
 
   const [email, setEmail] = useState("");
   const [gender, setGender] = useState("");
@@ -175,7 +176,49 @@ export default function Profile() {
     });
 
     if (!result.canceled) {
-      setSelectedImage(result.assets[0].uri);
+      const selectedUri = result.assets[0].uri;
+      const imageName = selectedUri.split("/").pop(); // Extracts the file name from the URI
+      setSelectedImage(selectedUri);
+
+      const imageUrl = await uploadImageToCloudinary(selectedUri, imageName);
+      console.log("Image URL:", imageUrl);
+      if (imageUrl) {
+        setTravelerProfilePic(imageUrl); // Store the image URL in the profilePic state
+      }
+    }
+  };
+  const uploadImageToCloudinary = async (uri, imageName) => {
+    try {
+      const data = new FormData();
+      const localUri = uri.startsWith("file://") ? uri : "file://" + uri;
+      data.append("file", {
+        uri: localUri,
+        type: "image/jpeg",
+        name: imageName,
+      });
+      data.append("upload_preset", "carttle");
+      data.append("cloud_name", "dvirfazqd");
+
+      const response = await fetch(
+        "https://api.cloudinary.com/v1_1/dvirfazqd/image/upload",
+        {
+          method: "POST",
+          body: data,
+          headers: {
+            Accept: "application/json",
+          },
+        }
+      );
+      const responseData = await response.json();
+
+      if (responseData.secure_url) {
+        const imageUrl = responseData.secure_url;
+        await AsyncStorage.setItem("profilePic", imageUrl); // Save the URL in AsyncStorage
+        return imageUrl; // Return the URL of the uploaded image
+      }
+    } catch (error) {
+      console.error("Error uploading image to Cloudinary:", error);
+      return null;
     }
   };
 
@@ -184,7 +227,14 @@ export default function Profile() {
   };
 
   const handleSave = async () => {
-    if (!email || !gender || !personalityType || !musicTaste || !drivingStyle) {
+    if (
+      !email ||
+      !gender ||
+      !personalityType ||
+      !musicTaste ||
+      !drivingStyle ||
+      !travelerprofilePic
+    ) {
       Alert.alert("Error", "Please fill all the fields before saving.");
       return;
     }
@@ -202,6 +252,7 @@ export default function Profile() {
           musicTaste,
           drivingStyle,
           userId: TravelerUserId,
+          travelerprofilePic,
         }),
       });
 
@@ -347,13 +398,13 @@ export default function Profile() {
           >
             <View style={styles.menuBackground}>
               <Image
-                source={require("../assets/profilePic.jpg")}
+                source={{ uri: travelerprofilePic }}
                 style={styles.profileImage}
               />
-              <Text style={styles.userName}>{userName}</Text>
+              <Text style={styles.userName}>{TravelerUserName}</Text>
               <View style={styles.menuOptions}>
                 <TouchableOpacity
-                  onPress={() => navigation.navigate("Profile")}
+                  onPress={() => navigation.navigate("TravelerProfile")}
                 >
                   <Text style={styles.menuOptionText}>Profile</Text>
                 </TouchableOpacity>
@@ -368,7 +419,9 @@ export default function Profile() {
                   <Text style={styles.menuOptionText}>Help</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
-                <TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate("TravellerWelcome")}
+                >
                   <Text style={styles.menuOptionText}>Sign Out</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>

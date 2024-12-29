@@ -39,12 +39,15 @@ const MapScreen = ({ route }) => {
   const navigation = useNavigation();
   const [rcModel, setRcModel] = useState(null);
   const [carRegNumber, setCarRegNumber] = useState(null);
+  const [profilePic, setProfilePic] = useState(null);
 
   const [name, setName] = useState("");
 
   const [storedTime, setStoredTime] = useState("");
 
-  const [userName, setUserName] = useState("");
+  const [driverId, setDriverId] = useState("");
+  const [driverName, setDriverName] = useState("");
+  const [driverPhoneNumber, setDriverPhoneNumber] = useState("");
 
   const [modalCommuteRegularly, setModalCommuteRegularly] = useState(false); // Toggle for modal
   const {
@@ -87,6 +90,38 @@ const MapScreen = ({ route }) => {
       console.error("Failed to open URL:", err)
     );
   };
+  useEffect(() => {
+    const getProfilePic = async () => {
+      const savedProfilePic = await AsyncStorage.getItem("profilePic");
+      if (savedProfilePic) {
+        setProfilePic(savedProfilePic); // Set the profile picture URL from AsyncStorage
+      }
+    };
+
+    getProfilePic(); // Fetch the profile picture on component mount
+  }, []);
+  useEffect(() => {
+    const fetchDriverDetails = async () => {
+      try {
+        // Fetch data from AsyncStorage
+        const storedDriverId = await AsyncStorage.getItem("driverUserId");
+        const storedDriverName = await AsyncStorage.getItem("driverName");
+        const storedDriverPhoneNumber = await AsyncStorage.getItem(
+          "driverPhoneNumber"
+        );
+
+        // Update state variables
+        if (storedDriverId) setDriverId(storedDriverId);
+        if (storedDriverName) setDriverName(storedDriverName);
+        if (storedDriverPhoneNumber)
+          setDriverPhoneNumber(storedDriverPhoneNumber);
+      } catch (error) {
+        console.error("Error fetching driver details:", error);
+      }
+    };
+
+    fetchDriverDetails();
+  }, []);
 
   useEffect(() => {
     if (option) {
@@ -497,8 +532,8 @@ const MapScreen = ({ route }) => {
           dataToSend = {
             driver: {
               // 1. driver (nested object)
-              name: userName,
-              userId: storedUserId,
+              name: driverName,
+              userId: driverId,
             },
             from: formatLocation(origin), // 2. from (longitude, latitude)
             to: formatLocation(destination), // 3. to (longitude, latitude)
@@ -525,8 +560,8 @@ const MapScreen = ({ route }) => {
           dataToSend = {
             driver: {
               // 1. driver (nested object)
-              name: userName,
-              userId: storedUserId,
+              name: driverName,
+              userId: driverId,
             },
             from: formatLocation(origin), // 2. from (longitude, latitude)
             to: formatLocation(destination), // 3. to (longitude, latitude)
@@ -555,8 +590,8 @@ const MapScreen = ({ route }) => {
         dataToSend = {
           driver: {
             // 1. driver (nested object)
-            name: userName,
-            userId: storedUserId,
+            name: driverName,
+            userId: driverId,
           },
           from: formatLocation(origin), // 2. from (longitude, latitude)
           to: formatLocation(destination), // 3. to (longitude, latitude)
@@ -702,11 +737,8 @@ const MapScreen = ({ route }) => {
             ]}
           >
             <View style={styles.menuBackground}>
-              <Image
-                source={require("../assets/profilePic.jpg")}
-                style={styles.profileImage}
-              />
-              <Text style={styles.userName}>{userName}</Text>
+              <Image source={{ uri: profilePic }} style={styles.profileImage} />
+              <Text style={styles.userName}>{driverName}</Text>
               <View style={styles.menuOptions}>
                 <TouchableOpacity
                   onPress={() => navigation.navigate("Profile")}
@@ -726,7 +758,7 @@ const MapScreen = ({ route }) => {
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={() => navigation.navigate("DriverLogin")}
+                  onPress={() => navigation.navigate("DriverWelcome")}
                 >
                   <Text style={styles.menuOptionText}>Sign Out</Text>
                   <View style={styles.horizontalRuler2} />

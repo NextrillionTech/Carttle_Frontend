@@ -68,6 +68,54 @@ const RidesScreen = ({ navigation }) => {
   const [userName, setUserName] = useState("");
   const [isMenuVisible, setMenuVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(-300)).current;
+  const [rides, setRides] = useState([]);
+
+  const fetchNewRide = async () => {
+    try {
+      const storedOrigin = await AsyncStorage.getItem("originName");
+      const storedDestination = await AsyncStorage.getItem("destinationName");
+      const userName = await AsyncStorage.getItem("userName");
+
+      const originStreet = storedOrigin?.split(",")[0] || "Unknown Origin";
+      const destinationStreet =
+        storedDestination?.split(",")[0] || "Unknown Destination";
+
+      const newRide = {
+        id: `${Date.now()}-${Math.random()}`, // Unique ID based on timestamp and random number
+        name: userName || "Unknown User",
+        location1: originStreet,
+        location2: destinationStreet,
+        earning: "", // Add appropriate values if needed
+        timestamp: new Date().toLocaleString(),
+        review: "",
+        currentStatus: "Current Ride",
+      };
+
+      // Add the new ride only if it is unique
+      setRides((prevRides) => {
+        const isDuplicate = prevRides.some(
+          (ride) =>
+            ride.name === newRide.name &&
+            ride.location1 === newRide.location1 &&
+            ride.location2 === newRide.location2 &&
+            ride.currentStatus === newRide.currentStatus
+        );
+
+        if (!isDuplicate) {
+          return [newRide, ...prevRides]; // Prepend the new ride
+        }
+
+        console.log("Duplicate ride detected. Skipping tile creation.");
+        return prevRides; // Return the original array if duplicate
+      });
+    } catch (error) {
+      console.error("Error fetching ride data:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchNewRide(); // Fetch the first ride on screen load
+  }, []);
 
   const handleOpenWebsite = () => {
     const url = "https://nextrilliontech.infinityfreeapp.com/";
@@ -135,21 +183,6 @@ const RidesScreen = ({ navigation }) => {
       }).start();
     }
   };
-
-  // Dynamically create rides array using state variables
-  const rides = [
-    {
-      id: "1",
-      name: userName,
-      rating: "",
-      location1: originName,
-      location2: destinationName,
-      earning: "",
-      timestamp: "",
-      review: "",
-      currentStatus: "Current Ride",
-    },
-  ];
 
   const handleTabPress = (tab) => {
     setActiveTab(tab);

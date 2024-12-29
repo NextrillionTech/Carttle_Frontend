@@ -10,6 +10,7 @@ import {
   Animated,
   TextInput,
   Modal,
+  ScrollView,
   FlatList,
   TouchableWithoutFeedback,
   Keyboard,
@@ -66,6 +67,150 @@ const TravelerSelectTime = ({ navigation, route }) => {
 
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
   const [customDate, setCustomDate] = useState(null);
+  const [modalSecondVisible, setModalSecondVisible] = useState(false); //MODAL FOR SELECTING SCREEN FOR current ORIGIN AND DEST
+  const [currentAddress, setCurrentAddress] = useState("Fetching address...");
+  const [currentLocLatitude, setCurrentLocLatitude] = useState(null);
+  const [currentLocLongitude, setCurrentLocLongitude] = useState(null);
+  const [TravelerUserId, setTravelerUserId] = useState(null);
+  const [TravelerUserName, setTravelerUserName] = useState(null);
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        // Retrieve user ID and name from AsyncStorage
+        const storedTravelerUserId = await AsyncStorage.getItem(
+          "TraveleruserId"
+        );
+        const storedTravelerUserName = await AsyncStorage.getItem(
+          "TraveleruserName"
+        );
+        if (storedTravelerUserId && storedTravelerUserName) {
+          setTravelerUserId(storedTravelerUserId); // Correctly set TravelerUserId
+          setTravelerUserName(storedTravelerUserName); // Correctly set TravelerUserName
+        } else {
+          console.log("User data not found");
+        }
+      } catch (error) {
+        console.error("Error retrieving data from AsyncStorage:", error);
+      }
+    };
+
+    loadUserData();
+  }, []);
+
+  useEffect(() => {
+    if (modalSecondVisible && userLocation) {
+      fetchCurrentAddress();
+    }
+  }, [modalSecondVisible]);
+
+  const openSecondSearchModal = () => {
+    setModalSecondVisible(true);
+  };
+  const fetchCurrentAddress = async () => {
+    try {
+      const response = await axios.get(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${userLocation.longitude},${userLocation.latitude}.json?access_token=sk.eyJ1IjoibmV4dHJpbGxpb24tdGVjaCIsImEiOiJjbHpnaHdiaTkxb29xMmpxc3V5bTRxNWNkIn0.l4AsMHEMhAEO90klTb3oCQ`
+      );
+      const address =
+        response.data.features[0]?.place_name || "Unable to fetch address";
+
+      // Store the latitude and longitude as currentLocLatitude and currentLocLongitude
+      setCurrentLocLatitude(userLocation.latitude);
+      setCurrentLocLongitude(userLocation.longitude);
+
+      setCurrentAddress(address);
+    } catch (error) {
+      console.error("Error fetching current location address:", error.message);
+      setCurrentAddress("Unable to fetch address");
+    }
+  };
+  const handleOpenWebsite = () => {
+    const url = "https://nextrilliontech.infinityfreeapp.com/";
+    Linking.openURL(url).catch((err) =>
+      console.error("Failed to open URL:", err)
+    );
+  };
+
+  const selectSuggestion2 = async (suggestion) => {
+    const destinationCoordinates = {
+      latitude: suggestion.geometry.coordinates[1],
+      longitude: suggestion.geometry.coordinates[0],
+    };
+
+    // Update the destination search query and coordinates
+    setSearchQuery2(suggestion.place_name); // Update destination search query
+    setDestinationCoordinates(destinationCoordinates); // Set the destination coordinates
+
+    console.log("Destination Selected:", suggestion.place_name); // Log destination
+    await AsyncStorage.setItem("destinationName", suggestion.place_name);
+
+    // Close the modal and proceed only if destination is selected
+    setModalSecondVisible(false);
+
+    // Log the selected data (without backend API calls)
+    console.log("Selected Destination Data:", {
+      destination: destinationCoordinates,
+      origin: {
+        latitude: currentLocLatitude,
+        longitude: currentLocLongitude,
+      },
+    });
+    let timeData = {};
+
+    const formatDate = (date) => {
+      const day = String(date.getDate()).padStart(2, "0"); // Ensure 2 digits
+      const month = String(date.getMonth() + 1).padStart(2, "0"); // Ensure 2 digits, months are 0-indexed
+      const year = date.getFullYear();
+      return `${day}-${month}-${year}`; // Return in 'DD MM YYYY' format
+    };
+
+    if (selectedTimeState === "Later" && formattedTime) {
+      // For "Later", send today's date and selected time
+      const today = new Date();
+      const todayFormatted = formatDate(today); // Format as 'DD MM YYYY'
+
+      timeData = {
+        selectedTime: selectedTimeState,
+        formattedTime, // Selected time
+        date: todayFormatted, // Today's date
+      };
+    } else if (selectedTimeState === "Tomorrow") {
+      // For "Tomorrow", send tomorrow's date and selected time
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowFormatted = formatDate(tomorrow); // Format as 'DD MM YYYY'
+
+      timeData = {
+        selectedTime: selectedTimeState,
+        formattedTime, // Selected time
+        date: tomorrowFormatted, // Tomorrow's date
+      };
+    } else if (selectedTimeState.startsWith("Custom Date")) {
+      // For "Custom Date", send selected custom date and selected time
+      const customDateFormatted = formatDate(new Date(customDate)); // Format custom date as 'DD MM YYYY'
+
+      timeData = {
+        selectedTime: selectedTimeState,
+        formattedTime, // Selected time
+        date: customDateFormatted, // Custom date selected
+      };
+    } else if (selectedTimeState.startsWith("Custom Date") && !customDate) {
+      console.warn("Custom Date is not set");
+      Alert.alert("Error", "Please select a custom date.");
+    }
+
+    // Navigate to MapScreen with the required data (without fetching distance or cost from backend)
+    navigation.navigate("RideList", {
+      destination: destinationCoordinates,
+      origin: {
+        latitude: currentLocLatitude,
+        longitude: currentLocLongitude,
+      },
+      ...timeData,
+      option: selectedTimeState,
+      customDate: customDate,
+    });
+  };
 
   const handleTimeChange = (event, time) => {
     const currentTime = time || chosenTime;
@@ -482,20 +627,15 @@ const TravelerSelectTime = ({ navigation, route }) => {
                 source={require("../assets/profilePic.jpg")}
                 style={styles.profileImage}
               />
-              <Text style={styles.userName}>Naina Kapoor</Text>
-              <Text style={styles.userEmail}>naina**@gmail.com</Text>
+              <Text style={styles.userName}>{TravelerUserName}</Text>
               <View style={styles.menuOptions}>
                 <TouchableOpacity
-                  onPress={() => navigation.navigate("Profile")}
+                  onPress={() => navigation.navigate("TravelerProfile")}
                 >
                   <Text style={styles.menuOptionText}>Profile</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
-                <TouchableOpacity>
-                  <Text style={styles.menuOptionText}>Trip History</Text>
-                  <View style={styles.horizontalRuler2} />
-                </TouchableOpacity>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={handleOpenWebsite}>
                   <Text style={styles.menuOptionText}>About</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
@@ -505,7 +645,9 @@ const TravelerSelectTime = ({ navigation, route }) => {
                   <Text style={styles.menuOptionText}>Help</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
-                <TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate("TravellerLogin")}
+                >
                   <Text style={styles.menuOptionText}>Sign Out</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
@@ -550,6 +692,16 @@ const TravelerSelectTime = ({ navigation, route }) => {
             />
           </TouchableOpacity>
           <TouchableOpacity
+            style={styles.optionButtonLarge}
+            onPress={openSearchModal}
+          >
+            <Image
+              source={require("../assets/current_location.png")}
+              style={styles.optionIcon}
+            />
+            <Text style={styles.optionText}>Current Location</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             style={styles.optionButton}
             onPress={() => setIsTimePickerVisible(true)} // Show the DateTimePicker
           >
@@ -590,7 +742,7 @@ const TravelerSelectTime = ({ navigation, route }) => {
         </View>
         <TouchableOpacity
           style={styles.destinationButton}
-          onPress={openSearchModal}
+          onPress={openSecondSearchModal}
         >
           <Image
             source={require("../assets/loc.png")}
@@ -665,6 +817,71 @@ const TravelerSelectTime = ({ navigation, route }) => {
                 </TouchableOpacity>
               )}
             />
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+      <Modal
+        visible={modalSecondVisible}
+        animationType="slide"
+        transparent={true}
+      >
+        <TouchableWithoutFeedback
+          onPress={() => {
+            setModalSecondVisible(false); // Close the modal on outside touch
+            Keyboard.dismiss(); // Dismiss the keyboard if it's open
+          }}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.horizontalRuler1} />
+            <Text style={styles.heading}>Select address</Text>
+            <View style={styles.horizontalRuler} />
+
+            {/* Display Current Address in First Input Box */}
+            <View style={styles.searchContainer}>
+              <ScrollView
+                horizontal={true}
+                showsHorizontalScrollIndicator={false}
+              >
+                <Text
+                  style={{
+                    color: "black",
+                    fontSize: 13,
+                    fontFamily: "poppins",
+                  }}
+                >
+                  {currentAddress}
+                </Text>
+              </ScrollView>
+            </View>
+
+            <View style={styles.searchContainer}>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Select Destination"
+                value={searchQuery2}
+                onChangeText={(query) => handleSearch2(query)} // Fetch suggestions dynamically
+              />
+            </View>
+
+            {/* Suggestions for Destination */}
+            {suggestions.length > 0 ? (
+              <FlatList
+                data={suggestions}
+                keyExtractor={(item) => item.id || item.place_name}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.suggestionItem}
+                    onPress={() => selectSuggestion2(item)}
+                  >
+                    <Text style={styles.suggestionText}>{item.place_name}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            ) : (
+              <Text style={styles.noSuggestionsText}>
+                No suggestions available.
+              </Text>
+            )}
           </View>
         </TouchableWithoutFeedback>
       </Modal>
@@ -1144,6 +1361,49 @@ const styles = StyleSheet.create({
     height: 50,
     width: "100%",
     fontFamily: "poppins",
+  },
+  sideMenu: {
+    position: "absolute",
+    top: 0,
+    elevation: 5,
+    zIndex: 2,
+    backgroundColor: "white",
+    width: "60%",
+    height: "100%",
+    borderTopRightRadius: 50,
+    borderBottomRightRadius: 50,
+    left: 0,
+    alignItems: "center",
+  },
+
+  horizontalRuler2: {
+    width: "150%", // Adjust this to control the width of the ruler
+    height: 1,
+    backgroundColor: "#d3d3d3", // Grey color
+    alignSelf: "center", // Center align the ruler
+    marginVertical: 10, // Optional: Adjust vertical spacing
+  },
+
+  profileImage: {
+    width: 80,
+    height: 80,
+    top: "10%",
+    borderRadius: 40,
+    marginBottom: 30,
+  },
+  userName: {
+    fontSize: 20,
+    fontFamily: "poppins",
+    marginTop: "20%",
+  },
+
+  menuOptionText: {
+    fontSize: 18,
+    alignContent: "center",
+    alignItems: "center",
+    fontFamily: "poppins",
+    paddingVertical: 10,
+    marginTop: 50,
   },
 });
 

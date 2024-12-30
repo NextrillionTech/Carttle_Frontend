@@ -385,7 +385,7 @@ const RideList = ({ route }) => {
         JSON.stringify(requestBody, null, 2)
       );
 
-      const response = await fetch("http://192.168.1.3:3000/rides/search", {
+      const response = await fetch("http://192.168.29.99:3000/rides/search", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -395,6 +395,10 @@ const RideList = ({ route }) => {
 
       const data = await response.json();
       console.log("Fetched rides:", data);
+      // Check if fetched rides are empty
+      if (!data || data.length === 0) {
+        alert("No rides available based on the selected filters.");
+      }
     } catch (error) {
       console.error("Error fetching rides:", error);
     }

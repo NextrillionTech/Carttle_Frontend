@@ -13,7 +13,6 @@ import axios from "axios";
 import { useNavigation } from "@react-navigation/native";
 import * as Font from "expo-font";
 import DropDownPicker from "react-native-dropdown-picker";
-import AsyncStorage from "@react-native-async-storage/async-storage"; // Import sAsyncStorage
 
 const { width, height } = Dimensions.get("window");
 
@@ -81,9 +80,6 @@ const TravellerSignup = () => {
 
       if (response.ok) {
         // Account created successfully
-        await AsyncStorage.setItem("isLoggedIn", "true");
-        await AsyncStorage.setItem("userType", "traveller");
-
         alert("Account created successfully!");
         navigation.navigate("TravellerHomeScreen");
       } else {

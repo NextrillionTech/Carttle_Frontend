@@ -69,6 +69,49 @@ const RidesScreen = ({ navigation }) => {
   const [isMenuVisible, setMenuVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(-300)).current;
   const [rides, setRides] = useState([]);
+  const [profilePic, setProfilePic] = useState(null);
+
+  const [driverDetails, setDriverDetails] = useState({
+    driverUserId: "",
+    driverName: "",
+    driverPhoneNumber: "",
+  });
+
+  useEffect(() => {
+    const fetchDriverDetails = async () => {
+      try {
+        const storedDriverUserId = await AsyncStorage.getItem("driverUserId");
+        const storedDriverName = await AsyncStorage.getItem("driverName");
+        const storedDriverPhoneNumber = await AsyncStorage.getItem(
+          "driverPhoneNumber"
+        );
+
+        setDriverDetails({
+          driverUserId: storedDriverUserId || "Not Available",
+          driverName: storedDriverName || "Not Available",
+          driverPhoneNumber: storedDriverPhoneNumber || "Not Available",
+        });
+      } catch (error) {
+        console.error(
+          "Error retrieving driver details from AsyncStorage:",
+          error
+        );
+      }
+    };
+
+    fetchDriverDetails();
+  }, []);
+
+  useEffect(() => {
+    const getProfilePic = async () => {
+      const savedProfilePic = await AsyncStorage.getItem("profilePic");
+      if (savedProfilePic) {
+        setProfilePic(savedProfilePic); // Set the profile picture URL from AsyncStorage
+      }
+    };
+
+    getProfilePic(); // Fetch the profile picture on component mount
+  }, []);
 
   const fetchNewRide = async () => {
     try {
@@ -82,7 +125,7 @@ const RidesScreen = ({ navigation }) => {
 
       const newRide = {
         id: `${Date.now()}-${Math.random()}`, // Unique ID based on timestamp and random number
-        name: userName || "Unknown User",
+        name: driverDetails.driverName || "Unknown User",
         location1: originStreet,
         location2: destinationStreet,
         earning: "", // Add appropriate values if needed
@@ -228,19 +271,16 @@ const RidesScreen = ({ navigation }) => {
             ]}
           >
             <View style={styles.menuBackground}>
-              <Image
-                source={require("../assets/profilePic.jpg")}
-                style={styles.profileImage}
-              />
-              <Text style={styles.userName}>{userName}</Text>
+              <Image source={{ uri: profilePic }} style={styles.profileImage} />
+              <Text style={styles.userName}>{driverDetails.driverName}</Text>
               <View style={styles.menuOptions}>
                 <TouchableOpacity
                   onPress={() => navigation.navigate("Profile")}
                 >
                   <Text style={styles.menuOptionText}>Profile</Text>
+                  <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
-
-                <TouchableOpacity onPress={handleOpenWebsite}>
+                <TouchableOpacity>
                   <Text style={styles.menuOptionText}>About</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
@@ -250,7 +290,9 @@ const RidesScreen = ({ navigation }) => {
                   <Text style={styles.menuOptionText}>Help</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
-                <TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate("DriverWelcome")}
+                >
                   <Text style={styles.menuOptionText}>Sign Out</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
@@ -417,14 +459,35 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginTop: 50,
   },
-  slideMenu: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: "80%", // or desired width
-    backgroundColor: "#fff",
-    transform: [{ translateX: -250 }], // Set initial hidden position
+
+  horizontalRuler2: {
+    width: "150%", // Adjust this to control the width of the ruler
+    height: 1,
+    backgroundColor: "#d3d3d3", // Grey color
+    alignSelf: "center", // Center align the ruler
+    marginVertical: 10, // Optional: Adjust vertical spacing
+  },
+
+  profileImage: {
+    width: 80,
+    height: 80,
+    top: "10%",
+    borderRadius: 40,
+    marginBottom: 30,
+  },
+  userName: {
+    fontSize: 20,
+    fontFamily: "poppins",
+    marginTop: "20%",
+  },
+
+  menuOptionText: {
+    fontSize: 18,
+    alignContent: "center",
+    alignItems: "center",
+    fontFamily: "poppins",
+    paddingVertical: 10,
+    marginTop: 50,
   },
 });
 

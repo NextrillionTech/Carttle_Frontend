@@ -20,8 +20,8 @@ import axios from "axios";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
 import BottomNav from "./BottomNav";
-import dropdownIcon from '../assets/dropdown.png';
-import clockicon from '../assets/clock.png';
+import dropdownIcon from "../assets/dropdown.png";
+import clockicon from "../assets/clock.png";
 
 const { height, width } = Dimensions.get("window");
 
@@ -38,7 +38,8 @@ const TravellerBooking = ({ route }) => {
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const navigation = useNavigation();
-
+  const [TravelerUserName, setTravelerUserName] = useState(null);
+  const [TraveleruserMobile, setTraveleruserMobile] = useState(null);
   const slideAnim = useRef(new Animated.Value(-300)).current;
   const [selectedTime, setSelectedTime] = useState("");
   const [dateOptions, setDateOptions] = useState([]);
@@ -54,6 +55,24 @@ const TravellerBooking = ({ route }) => {
   const [time, setTime] = useState(new Date());
   const [seatsAvailable, setSeatsAvailable] = useState(1);
   const [amountPerSeat, setAmountPerSeat] = useState(0);
+  const [travelerprofilePic, setTravelerProfilePic] = useState(null);
+  const handleOpenWebsite = () => {
+    const url = "https://nextrilliontech.infinityfreeapp.com/";
+    Linking.openURL(url).catch((err) =>
+      console.error("Failed to open URL:", err)
+    );
+  };
+
+  useEffect(() => {
+    const getProfilePic = async () => {
+      const savedProfilePic = await AsyncStorage.getItem("travelerprofilePic");
+      if (savedProfilePic) {
+        setTravelerProfilePic(savedProfilePic); // Set the profile picture URL from AsyncStorage
+      }
+    };
+
+    getProfilePic(); // Fetch the profile picture on component mount
+  }, []);
 
   const closeMenu = () => {
     Animated.timing(slideAnim, {
@@ -65,10 +84,9 @@ const TravellerBooking = ({ route }) => {
     });
   };
 
-  
-
-
-  
+  const openNotifications = () => {
+    navigation.navigate("NotificationScreen");
+  };
 
   const toggleMenu = () => {
     if (isMenuVisible) {
@@ -84,7 +102,8 @@ const TravellerBooking = ({ route }) => {
   };
 
   const fetchRoute = async (origin, destination) => {
-    const MAPBOX_TOKEN = "sk.eyJ1IjoibmV4dHJpbGxpb24tdGVjaCIsImEiOiJjbHpnaHdiaTkxb29xMmpxc3V5bTRxNWNkIn0.l4AsMHEMhAEO90klTb3oCQ"; // Replace with your token
+    const MAPBOX_TOKEN =
+      "sk.eyJ1IjoibmV4dHJpbGxpb24tdGVjaCIsImEiOiJjbHpnaHdiaTkxb29xMmpxc3V5bTRxNWNkIn0.l4AsMHEMhAEO90klTb3oCQ"; // Replace with your token
     const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}?geometries=geojson&access_token=${MAPBOX_TOKEN}`;
 
     try {
@@ -137,12 +156,12 @@ const TravellerBooking = ({ route }) => {
   const decrementSeats = () => {
     setSeatsAvailable((prev) => (prev > 1 ? prev - 1 : 1));
   };
-  
+
   const handleImageButtonPress = () => {
     console.log("Image button pressed!");
     // Add your specific functionality here
   };
-  
+
   const handleFirstButtonPress = () => {
     console.log("First button pressed!");
     // Add your specific functionality here
@@ -153,11 +172,6 @@ const TravellerBooking = ({ route }) => {
     // Add your specific functionality here
   };
 
-      
-  
-
- 
-
   return (
     <View style={styles.container}>
       {currentLocation && destination ? (
@@ -166,8 +180,10 @@ const TravellerBooking = ({ route }) => {
           initialRegion={{
             latitude: (currentLocation.latitude + destination.latitude) / 2,
             longitude: (currentLocation.longitude + destination.longitude) / 2,
-            latitudeDelta: Math.abs(currentLocation.latitude - destination.latitude) * 2,
-            longitudeDelta: Math.abs(currentLocation.longitude - destination.longitude) * 2,
+            latitudeDelta:
+              Math.abs(currentLocation.latitude - destination.latitude) * 2,
+            longitudeDelta:
+              Math.abs(currentLocation.longitude - destination.longitude) * 2,
           }}
         >
           <Marker
@@ -203,7 +219,6 @@ const TravellerBooking = ({ route }) => {
           style={[styles.icon, styles.menuIcon]}
         />
       </TouchableOpacity>
-
       {isMenuVisible && (
         <TouchableWithoutFeedback onPress={closeMenu}>
           <Animated.View
@@ -216,29 +231,19 @@ const TravellerBooking = ({ route }) => {
           >
             <View style={styles.menuBackground}>
               <Image
-                source={require("../assets/profilePic.jpg")}
+                source={{ uri: travelerprofilePic }}
                 style={styles.profileImage}
               />
-              <Text style={styles.userName}>Naina Kapoor</Text>
-              <Text style={styles.userEmail}>naina**@gmail.com</Text>
+              <Text style={styles.userName}>{TravelerUserName}</Text>
               <View style={styles.menuOptions}>
                 <TouchableOpacity
-                  onPress={() => navigation.navigate("Profile")}
+                  onPress={() => navigation.navigate("TravelerProfile")}
                 >
                   <Text style={styles.menuOptionText}>Profile</Text>
-                  <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
-                <TouchableOpacity>
-                  <Text style={styles.menuOptionText}>Trip History</Text>
-                  <View style={styles.horizontalRuler2} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() =>
-                    Linking.openURL(
-                      "https://nextrilliontech.infinityfreeapp.com"
-                    )
-                  }
-                >
+                <View style={styles.horizontalRuler2} />
+
+                <TouchableOpacity onPress={handleOpenWebsite}>
                   <Text style={styles.menuOptionText}>About</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
@@ -248,7 +253,9 @@ const TravellerBooking = ({ route }) => {
                   <Text style={styles.menuOptionText}>Help</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
-                <TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate("TravellerWecome")}
+                >
                   <Text style={styles.menuOptionText}>Sign Out</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
@@ -257,17 +264,23 @@ const TravellerBooking = ({ route }) => {
           </Animated.View>
         </TouchableWithoutFeedback>
       )}
-
-      <Image
-        source={require("../assets/Bell_icon.png")}
-        style={styles.topRightIcon}
-      />
+      <View style={styles.headerContainer}>
+        <TouchableOpacity
+          onPress={openNotifications}
+          style={{ width: 40, height: 40 }}
+        >
+          <Image
+            source={require("../assets/Bell_icon.png")}
+            style={[styles.icon, styles.notificationIcon]}
+          />
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <View style={styles.horizontalRuler1} />
           <Text style={styles.cardTitle}>
-          Alex Brim can reach you in 5mins.
+            Alex Brim can reach you in 5mins.
           </Text>
         </View>
         <View style={styles.horizontalRuler} />
@@ -314,40 +327,51 @@ const TravellerBooking = ({ route }) => {
           </View>
           <View style={styles.horizontalRuler} />
           <View style={styles.detailsRow}>
-          <Text style={styles.detailsLabel}>Payment Method</Text>
-          <Text style={styles.detailsValue}>₹220.00</Text>
+            <Text style={styles.detailsLabel}>Payment Method</Text>
+            <Text style={styles.detailsValue}>₹220.00</Text>
           </View>
-          <TouchableOpacity onPress={handleImageButtonPress} style={styles.imageButton}>
-        <Image
-          source={require("../assets/upi.png")} // Replace with your image path
-          style={styles.image}
-        />
-      </TouchableOpacity>
-      <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.messageButton}>
-            <Text style={styles.buttonText}>Message</Text>
+          <TouchableOpacity
+            onPress={handleImageButtonPress}
+            style={styles.imageButton}
+          >
+            <Image
+              source={require("../assets/upi.png")} // Replace with your image path
+              style={styles.image}
+            />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.cancelButton} onPress={() => navigation.navigate("PaymentScreen")}>
-            <Text style={styles.buttonText1}>Book Now</Text>
-          </TouchableOpacity>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity style={styles.messageButton}>
+              <Text style={styles.buttonText}>Message</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => navigation.navigate("PaymentScreen")}
+            >
+              <Text style={styles.buttonText1}>Book Now</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
 
-      {/* Bottom Navigation */}
-      <View style={styles.navbar}>
-        <TouchableOpacity style={styles.navIcon}>
-          <Image source={require('../assets/HOME.png')} style={styles.navIconImage} />
-          
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navIcon}>
-          <Image source={require('../assets/RIDES.png')} style={styles.navIconImage} />
-          
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navIcon}>
-          <Image source={require('../assets/msg_icon.png')} style={styles.navIconImage} />
-          
-        </TouchableOpacity>
-     
+        {/* Bottom Navigation */}
+        <View style={styles.navbar}>
+          <TouchableOpacity style={styles.navIcon}>
+            <Image
+              source={require("../assets/HOME.png")}
+              style={styles.navIconImage}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navIcon}>
+            <Image
+              source={require("../assets/RIDES.png")}
+              style={styles.navIconImage}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navIcon}>
+            <Image
+              source={require("../assets/msg_icon.png")}
+              style={styles.navIconImage}
+            />
+          </TouchableOpacity>
         </View>
       </View>
     </View>
@@ -413,7 +437,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginTop: 25,
     width: "80%",
-    marginLeft: '10%',
+    marginLeft: "10%",
     alignItems: "center",
     borderRadius: 5,
   },
@@ -426,9 +450,7 @@ const styles = StyleSheet.create({
     fontFamily: "poppins",
     fontSize: 16,
   },
-  map: {
-    ...StyleSheet.absoluteFillObject,
-  },
+
   icon: {
     width: 30,
     height: 30,
@@ -598,11 +620,11 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     textAlign: "center",
   },
-  
+
   textContainer: {
     flexDirection: "row",
   },
-  
+
   confirmButtonContainer: {
     marginTop: 5,
     backgroundColor: "#000000",
@@ -617,7 +639,7 @@ const styles = StyleSheet.create({
     color: "red",
     marginTop: 10,
   },
-  
+
   sideMenu: {
     position: "absolute",
     top: 0,
@@ -632,10 +654,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   imageButton: {
-    alignItems: 'center',// Padding around the image
+    alignItems: "center", // Padding around the image
   },
   image: {
-    width: '110%', // Adjust width as needed
+    width: "110%", // Adjust width as needed
     height: 100, // Adjust height as needed
     resizeMode: "contain",
   },
@@ -657,27 +679,34 @@ const styles = StyleSheet.create({
     padding: 10, // Padding around the image
   },
   buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  notificationIcon: {
+    position: "relative",
+    bottom: "945%",
+    left: 160,
+    height: 40,
+    width: 40,
   },
   messageButton: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderWidth: 1,
-    borderColor: '#000',
+    borderColor: "#000",
     borderRadius: 10,
     padding: 10,
     marginBottom: 10,
     marginRight: 10,
-    alignItems: 'center',
+    alignItems: "center",
   },
   cancelButton: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: "#000",
     borderRadius: 10,
     padding: 10,
     marginBottom: 10,
-    alignItems: 'center',
+    alignItems: "center",
   },
   buttonText: {
     fontSize: 16,
@@ -685,19 +714,19 @@ const styles = StyleSheet.create({
   },
   buttonText1: {
     fontSize: 16,
-    color:'#ffffff',
+    color: "#ffffff",
     fontFamily: "poppins",
   },
   navbar: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexDirection: "row",
+    justifyContent: "space-around",
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderColor: '#ccc',
-    backgroundColor: '#fff',
+    borderColor: "#ccc",
+    backgroundColor: "#fff",
   },
   navIcon: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   navIconImage: {
     width: 59,
@@ -708,8 +737,35 @@ const styles = StyleSheet.create({
     fontFamily: "poppins",
     marginTop: 5,
   },
+  horizontalRuler2: {
+    width: "150%", // Adjust this to control the width of the ruler
+    height: 1,
+    backgroundColor: "#d3d3d3", // Grey color
+    alignSelf: "center", // Center align the ruler
+    marginVertical: 10, // Optional: Adjust vertical spacing
+  },
 
+  profileImage: {
+    width: 80,
+    height: 80,
+    top: "10%",
+    borderRadius: 40,
+    marginBottom: 30,
+  },
+  userName: {
+    fontSize: 20,
+    fontFamily: "poppins",
+    marginTop: "20%",
+  },
 
+  menuOptionText: {
+    fontSize: 18,
+    alignContent: "center",
+    alignItems: "center",
+    fontFamily: "poppins",
+    paddingVertical: 10,
+    marginTop: 50,
+  },
 });
 
 export default TravellerBooking;

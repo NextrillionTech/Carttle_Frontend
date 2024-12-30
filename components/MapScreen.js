@@ -19,7 +19,8 @@ import MapView, { Marker, Polyline } from "react-native-maps";
 import * as Location from "expo-location";
 import axios from "axios";
 import DateTimePicker from "@react-native-community/datetimepicker";
-
+import dropdownicon from "../assets/dropdown.png";
+import clockicon from "../assets/clock.png";
 import { Picker } from "@react-native-picker/picker";
 import BottomNav from "./BottomNav";
 
@@ -784,10 +785,7 @@ const MapScreen = ({ route }) => {
         <View style={styles.horizontalRuler} />
         <View style={styles.cardContent}>
           <View style={styles.driverInfo}>
-            <Image
-              source={require("../assets/driver_avatar.png")}
-              style={styles.driverAvatar}
-            />
+            <Image source={{ uri: profilePic }} style={styles.driverAvatar} />
             <View>
               <Text style={styles.driverName}>
                 {carRegNumber} (
@@ -933,18 +931,12 @@ const MapScreen = ({ route }) => {
                 onPress={() => setShowStartDatePicker(true)}
                 style={styles.datePickerContainer}
               >
-                <Image
-                  source={require("../assets/clock.png")}
-                  style={styles.icon_clock}
-                />
+                <Image source={clockicon} style={styles.icon_clock} />
                 <Text style={styles.selectedWeekText1}>
                   {`${formatDate(startDate)}`}
                   {"\n"}
                 </Text>
-                <Image
-                  source={require("../assets/dropdown.png")}
-                  style={styles.icon_dropdown}
-                />
+                <Image source={dropdownicon} style={styles.icon_dropdown} />
               </TouchableOpacity>
               {showStartDatePicker && (
                 <DateTimePicker
@@ -965,18 +957,13 @@ const MapScreen = ({ route }) => {
                 onPress={() => setShowEndDatePicker(true)}
                 style={styles.datePickerContainer}
               >
-                <Image
-                  source={require("../assets/clock.png")}
-                  style={styles.icon_clock}
-                />
+                <Image source={clockicon} style={styles.icon_clock} />
+
                 <Text style={styles.selectedWeekText1}>
                   {`${formatDate(endDate)}`}
                   {"\n"}
                 </Text>
-                <Image
-                  source={require("../assets/clock.png")}
-                  style={styles.icon_dropdown}
-                />
+                <Image source={dropdownicon} style={styles.icon_dropdown} />
               </TouchableOpacity>
               {showEndDatePicker && (
                 <DateTimePicker
@@ -997,14 +984,12 @@ const MapScreen = ({ route }) => {
                 onPress={() => setShowTimePicker(true)}
                 style={styles.datePickerContainer}
               >
-                <Image source="../assets/clock.png" style={styles.icon_clock} />
+                <Image source={clockicon} style={styles.icon_clock} />
+
                 <Text style={styles.selectedTimeText1}>
                   {selectedTime || "Select a time"}
                 </Text>
-                <Image
-                  source="../assets/clock.png"
-                  style={styles.icon_dropdown}
-                />
+                <Image source={dropdownicon} style={styles.icon_dropdown} />
               </TouchableOpacity>
               {showTimePicker && (
                 <DateTimePicker
@@ -1090,10 +1075,8 @@ const MapScreen = ({ route }) => {
                     onPress={() => setShowTimePicker(true)}
                     style={styles.dateTimeContainer}
                   >
-                    <Image
-                      source={require("../assets/clock.png")}
-                      style={styles.icon_clock}
-                    />
+                    <Image source={clockicon} style={styles.icon_clock} />
+
                     <Text style={styles.selectedTimeText1}>
                       {selectedTime || "Select a time"}
                     </Text>
@@ -1160,12 +1143,12 @@ const styles = StyleSheet.create({
   icon_dropdown: {
     width: 16, // Adjust size as needed
     height: 16,
-    marginLeft: 120,
+    marginLeft: 180,
   },
   icon_clock: {
     width: 20, // Adjust size as needed
     height: 20,
-    marginLeft: 7,
+    marginLeft: 10,
   },
   datePickerContainer: {
     flexDirection: "row",
@@ -1184,28 +1167,13 @@ const styles = StyleSheet.create({
     color: "#7C7C7C",
     alignSelf: "flex-start", // Left align the text
   },
-  closeButton: {
-    backgroundColor: "black",
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    marginTop: 25,
-    width: "80%",
-    marginLeft: "10%",
-    alignItems: "center",
-    borderRadius: 5,
-  },
+
   selectedWeekText1: {
+    paddingRight: 150,
     color: "#000000",
-    marginHorizontal: 19,
-    textAlign: "center",
-    marginTop: 9,
-  },
-  selectedTimeText1: {
-    color: "#000000",
-    marginHorizontal: 15,
-    textAlign: "center",
-    marginTop: 3,
-    marginLeft: 20,
+    paddingBottom: 7,
+    marginTop: 10,
+    marginLeft: 5,
   },
   closeButtonText: {
     color: "white",
@@ -1291,11 +1259,7 @@ const styles = StyleSheet.create({
 
     color: "#7C7C7C",
   },
-  selectedWeekText1: {
-    paddingRight: 250,
-    color: "#000000",
-    paddingBottom: 20,
-  },
+
   dropdownContainer: {
     width: "100%",
     alignItems: "flex-start", // Align items to the start
@@ -1309,16 +1273,19 @@ const styles = StyleSheet.create({
     width: "100%",
     backgroundColor: "#F5F5F5",
   },
-  closeButton: {
-    backgroundColor: "black",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    width: "80%",
-    alignItems: "center",
-    borderRadius: 5,
-  },
+
   dateRangeText1: {
     paddingRight: 140,
+  },
+  closeButton: {
+    backgroundColor: "black",
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    marginTop: 25,
+    width: "80%",
+    marginLeft: "10%",
+    alignItems: "center",
+    borderRadius: 5,
   },
   closeButtonText: {
     color: "white",
@@ -1572,6 +1539,17 @@ const styles = StyleSheet.create({
     fontFamily: "poppins",
     paddingVertical: 10,
     marginTop: 50,
+  },
+  selectedTimeText1: {
+    color: "#000000",
+    marginHorizontal: 15,
+    textAlign: "center",
+    marginTop: 3,
+    marginLeft: 20,
+  },
+  dateRangeText1: {
+    paddingRight: 40,
+    marginLeft: 10,
   },
 });
 

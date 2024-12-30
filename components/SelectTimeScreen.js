@@ -40,6 +40,8 @@ const MAPBOX_TILE_URL = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/til
 const SelectTimeScreen = ({ navigation, route }) => {
   const [selectedTimeState, setSelectedTimeState] = useState("Select Time"); // Set it in state
   const [region, setRegion] = useState(null);
+  const [profilePic, setProfilePic] = useState(null);
+
   const [userLocation, setUserLocation] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   const [activeTab, setActiveTab] = useState("home");
@@ -72,6 +74,47 @@ const SelectTimeScreen = ({ navigation, route }) => {
 
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
   const [customDate, setCustomDate] = useState(null);
+  const [driverDetails, setDriverDetails] = useState({
+    driverUserId: "",
+    driverName: "",
+    driverPhoneNumber: "",
+  });
+
+  useEffect(() => {
+    const fetchDriverDetails = async () => {
+      try {
+        const storedDriverUserId = await AsyncStorage.getItem("driverUserId");
+        const storedDriverName = await AsyncStorage.getItem("driverName");
+        const storedDriverPhoneNumber = await AsyncStorage.getItem(
+          "driverPhoneNumber"
+        );
+
+        setDriverDetails({
+          driverUserId: storedDriverUserId || "Not Available",
+          driverName: storedDriverName || "Not Available",
+          driverPhoneNumber: storedDriverPhoneNumber || "Not Available",
+        });
+      } catch (error) {
+        console.error(
+          "Error retrieving driver details from AsyncStorage:",
+          error
+        );
+      }
+    };
+
+    fetchDriverDetails();
+  }, []);
+
+  useEffect(() => {
+    const getProfilePic = async () => {
+      const savedProfilePic = await AsyncStorage.getItem("profilePic");
+      if (savedProfilePic) {
+        setProfilePic(savedProfilePic); // Set the profile picture URL from AsyncStorage
+      }
+    };
+
+    getProfilePic(); // Fetch the profile picture on component mount
+  }, []);
 
   useEffect(() => {
     if (modalSecondVisible && userLocation) {
@@ -608,21 +651,13 @@ const SelectTimeScreen = ({ navigation, route }) => {
             ]}
           >
             <View style={styles.menuBackground}>
-              <Image
-                source={require("../assets/profilePic.jpg")}
-                style={styles.profileImage}
-              />
-              <Text style={styles.userName}>Naina Kapoor</Text>
-              <Text style={styles.userEmail}>naina**@gmail.com</Text>
+              <Image source={{ uri: profilePic }} style={styles.profileImage} />
+              <Text style={styles.userName}>{driverDetails.driverName}</Text>
               <View style={styles.menuOptions}>
                 <TouchableOpacity
                   onPress={() => navigation.navigate("Profile")}
                 >
                   <Text style={styles.menuOptionText}>Profile</Text>
-                  <View style={styles.horizontalRuler2} />
-                </TouchableOpacity>
-                <TouchableOpacity>
-                  <Text style={styles.menuOptionText}>Trip History</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
                 <TouchableOpacity>
@@ -635,7 +670,9 @@ const SelectTimeScreen = ({ navigation, route }) => {
                   <Text style={styles.menuOptionText}>Help</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
-                <TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate("DriverWelcome")}
+                >
                   <Text style={styles.menuOptionText}>Sign Out</Text>
                   <View style={styles.horizontalRuler2} />
                 </TouchableOpacity>
@@ -1350,6 +1387,35 @@ const styles = StyleSheet.create({
     height: 50,
     width: "100%",
     fontFamily: "poppins",
+  },
+  horizontalRuler2: {
+    width: "150%", // Adjust this to control the width of the ruler
+    height: 1,
+    backgroundColor: "#d3d3d3", // Grey color
+    alignSelf: "center", // Center align the ruler
+    marginVertical: 10, // Optional: Adjust vertical spacing
+  },
+
+  profileImage: {
+    width: 80,
+    height: 80,
+    top: "10%",
+    borderRadius: 40,
+    marginBottom: 30,
+  },
+  userName: {
+    fontSize: 20,
+    fontFamily: "poppins",
+    marginTop: "20%",
+  },
+
+  menuOptionText: {
+    fontSize: 18,
+    alignContent: "center",
+    alignItems: "center",
+    fontFamily: "poppins",
+    paddingVertical: 10,
+    marginTop: 50,
   },
 });
 

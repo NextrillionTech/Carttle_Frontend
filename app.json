@@ -26,6 +26,12 @@
     },
     "plugins": [
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "12e03a48-a5e2-46bd-80e7-cb0f4655c5d5"
+      }
+    },
+    "owner": "trisheta"
   }
 }

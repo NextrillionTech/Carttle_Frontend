@@ -71,8 +71,38 @@ const HomeScreen = ({ route, navigation }) => {
   const [destinationCoordinates, setDestinationCoordinates] = useState(null);
   const slideAnim = useRef(new Animated.Value(-300)).current; // Start off-screen
   const [stateName, setStateName] = useState(""); // Use state instead of a simple variable
-
+  const [driverDetails, setDriverDetails] = useState({
+    driverUserId: "",
+    driverName: "",
+    driverPhoneNumber: "",
+  });
   const [originCoordinates, setOriginCoordinates] = useState(null); // Add this to track the origin
+
+  useEffect(() => {
+    const fetchDriverDetails = async () => {
+      try {
+        const storedDriverUserId = await AsyncStorage.getItem("driverUserId");
+        const storedDriverName = await AsyncStorage.getItem("driverName");
+        const storedDriverPhoneNumber = await AsyncStorage.getItem(
+          "driverPhoneNumber"
+        );
+
+        setDriverDetails({
+          driverUserId: storedDriverUserId || "Not Available",
+          driverName: storedDriverName || "Not Available",
+          driverPhoneNumber: storedDriverPhoneNumber || "Not Available",
+        });
+      } catch (error) {
+        console.error(
+          "Error retrieving driver details from AsyncStorage:",
+          error
+        );
+      }
+    };
+
+    fetchDriverDetails();
+  }, []);
+
   useEffect(() => {
     const getProfilePic = async () => {
       const savedProfilePic = await AsyncStorage.getItem("profilePic");
@@ -126,7 +156,6 @@ const HomeScreen = ({ route, navigation }) => {
         if (name !== null) {
           setUserName(name); // Set the user name if it exists
         } else {
-          Alert.alert("No user found", "User name is not available.");
         }
       } catch (error) {
         console.error("Failed to fetch user name:", error);
@@ -542,7 +571,7 @@ const HomeScreen = ({ route, navigation }) => {
           >
             <View style={styles.menuBackground}>
               <Image source={{ uri: profilePic }} style={styles.profileImage} />
-              <Text style={styles.userName}>{userName}</Text>
+              <Text style={styles.userName}>{driverDetails.driverName}</Text>
               <View style={styles.menuOptions}>
                 <TouchableOpacity
                   onPress={() => navigation.navigate("Profile")}
@@ -640,7 +669,7 @@ const HomeScreen = ({ route, navigation }) => {
           ]}
         >
           {renderRadioButton("Now")}
-          {renderRadioButton("Later")}
+          {renderRadioButton("Today")}
           {renderRadioButton("Tomorrow")}
           {renderRadioButton("Custom Date")}
         </View>
@@ -1033,6 +1062,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     borderBottomWidth: 1,
     borderBottomColor: "#d3d3d3",
+    bottom: 10,
   },
   searchIcon: {
     width: 20,

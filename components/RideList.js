@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage"; // Import AsyncStorage
 
-import TravelerBottomNavBottomNav from "./TravelerBottomNav"; // Ensure BottomNav is correctly imported
+import BottomNav from "./BottomNav"; // Ensure BottomNav is correctly imported
 import { useNavigation } from "@react-navigation/native";
 import * as Font from "expo-font";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -26,9 +26,8 @@ function fetchFonts() {
 const RideList = ({ route }) => {
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState("rides");
-  const [TravelerUserId, setTravelerUserId] = useState(null);
-  const [TravelerUserName, setTravelerUserName] = useState(null);
-  const [isMenuVisible, setMenuVisible] = useState(false);
+  const [activeButtons, setActiveButtons] = useState([]);
+  const [activeFilters, setActiveFilters] = useState({});
 
   const {
     destination,
@@ -40,22 +39,58 @@ const RideList = ({ route }) => {
     time,
     date,
     formattedTime,
-    selectedTime,
   } = route.params;
 
-  const [activeFilters, setActiveFilters] = useState({
-    rideTime: "Ride Time",
-    distance: "Distance",
-    availableSeats: "Available Seats",
-    gender: "Gender", // Set default value for Gender
-  });
   const [showDropdown, setShowDropdown] = useState(false);
   const [dropdownOptions, setDropdownOptions] = useState([]);
   const [dropdownPosition, setDropdownPosition] = useState({});
+  const [dropdownVisible, setDropdownVisible] = useState(false);
   const [activeFilter, setActiveFilter] = useState("rideTime");
+  const [selectedTime, setSelectedTime] = useState("Select Time");
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [formattedDate, setFormattedDate] = useState("");
+  const [TravelerUserId, setTravelerUserId] = useState(null);
+  const [TravelerUserName, setTravelerUserName] = useState(null);
+  const [isMenuVisible, setMenuVisible] = useState(false);
+
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const storedTravelerUserId = await AsyncStorage.getItem(
+          "TraveleruserId"
+        );
+        const storedTravelerUserName = await AsyncStorage.getItem(
+          "TraveleruserName"
+        );
+        if (storedTravelerUserId && storedTravelerUserName) {
+          setTravelerUserId(storedTravelerUserId);
+          setTravelerUserName(storedTravelerUserName);
+        } else {
+          console.log("User data not found");
+        }
+      } catch (error) {
+        console.error("Error retrieving data from AsyncStorage:", error);
+      }
+    };
+
+    loadUserData();
+  }, []);
+
+  const openTimePicker = () => {
+    setShowTimePicker(true);
+  };
+
+  const formatTimeToHHMM = (date) => {
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
+      2,
+      "0"
+    )}`;
+  };
+
   const slideAnim = useRef(new Animated.Value(-300)).current; // Start off-screen
 
   useEffect(() => {
@@ -136,8 +171,13 @@ const RideList = ({ route }) => {
 
   const filters = [
     {
-      label: activeFilters.rideTime, // Set dynamic value based on state
+      label: activeFilters.rideTime,
       value: "rideTime",
+      icon: require("../assets/clock.png"),
+    },
+    {
+      label: activeFilters.time,
+      value: "time",
       icon: require("../assets/clock.png"),
     },
     {
@@ -153,6 +193,22 @@ const RideList = ({ route }) => {
     { label: "Gender", value: "gender", icon: require("../assets/gender.png") },
   ];
 
+  const handleTimeChange = (event, time) => {
+    if (time) {
+      const formatted = time.toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      });
+      setSelectedTime(formatted);
+      if (!activeButtons.includes("time")) {
+        setActiveButtons([...activeButtons, "time"]);
+      }
+      setActiveFilters((prev) => ({ ...prev, time: `Time: ${formatted}` }));
+    }
+    setShowTimePicker(false);
+  };
+
   const dropdownValues = {
     rideTime: ["Now", "Later", "Tomorrow", "Custom Date"],
     distance: ["250m", "500m", "750m", "1km"],
@@ -160,28 +216,27 @@ const RideList = ({ route }) => {
     gender: ["Male", "Female", "Others"],
   };
 
-  const closeMenu = () => {
-    Animated.timing(slideAnim, {
-      toValue: -300, // Slide out to the left
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      setMenuVisible(false);
-    });
-  };
-
   const handleFilterPress = (filter, event) => {
+    if (activeButtons.includes(filter)) {
+      setActiveButtons(activeButtons.filter((btn) => btn !== filter));
+    } else {
+      setActiveButtons([...activeButtons, filter]);
+    }
     setActiveFilter(filter);
     setDropdownOptions(dropdownValues[filter]);
-    const { pageX, pageY } = event.nativeEvent;
-    setDropdownPosition({ x: pageX, y: pageY });
-    setShowDropdown(true);
+    if (event && event.nativeEvent) {
+      const { pageX, pageY } = event.nativeEvent;
+      setDropdownPosition({ x: pageX, y: pageY });
+      setShowDropdown(true);
+    }
   };
+
   const toggleMenu = () => {
     if (isMenuVisible) {
       closeMenu();
     } else {
       setMenuVisible(true);
+      // Assuming slideAnim is defined elsewhere in your code
       Animated.timing(slideAnim, {
         toValue: 0, // Slide in to the center
         duration: 300,
@@ -189,6 +244,15 @@ const RideList = ({ route }) => {
       }).start();
     }
   };
+
+  const renderFilterButton = (filter) => (
+    <TouchableOpacity
+      onPress={(event) => handleFilterPress(filter, event)}
+      style={styles.filterButton}
+    >
+      <Text>{filter}</Text>
+    </TouchableOpacity>
+  );
 
   const handleRequestPress = () => {
     navigation.navigate("TravellerBooking");
@@ -224,6 +288,19 @@ const RideList = ({ route }) => {
     setShowCalendar(true);
   };
 
+  const handleRideTimeSelect = (time) => {
+    setActiveFilters({ ...activeFilters, rideTime: time });
+    setDropdownVisible(false);
+    if (time === "Custom Date") {
+      setShowCalendar(true); // Show the calendar picker
+    } else {
+      setShowCalendar(false); // Ensure calendar is hidden for other selections
+    }
+    if (!activeButtons.includes("rideTime")) {
+      setActiveButtons([...activeButtons, "rideTime"]);
+    }
+  };
+
   const handleDropdownSelect = (selectedOption) => {
     if (selectedOption === "Custom Date") {
       openCalendar();
@@ -238,14 +315,6 @@ const RideList = ({ route }) => {
     }
   };
 
-  const formatTimeToHHMM = (date) => {
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
-      2,
-      "0"
-    )}`;
-  };
   const convert12hrTo24hrFormat = (time) => {
     // Check if the input time is in 12-hour format (e.g., "02:30 PM")
     const match = time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
@@ -316,7 +385,7 @@ const RideList = ({ route }) => {
         JSON.stringify(requestBody, null, 2)
       );
 
-      const response = await fetch("http://192.168.29.99:3000/rides/search", {
+      const response = await fetch("http://192.168.1.3:3000/rides/search", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -346,55 +415,209 @@ const RideList = ({ route }) => {
     return (
       <View style={styles.container}>
         <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={toggleMenu}>
+          <TouchableOpacity onPress={openMenu}>
             <Image
               source={require("../assets/nav_icon.png")}
-              style={styles.icon}
+              style={styles.topicon}
             />
           </TouchableOpacity>
 
           <TouchableOpacity onPress={openNotifications}>
             <Image
               source={require("../assets/Bell_icon.png")}
-              style={styles.icon}
+              style={styles.topicon}
             />
           </TouchableOpacity>
         </View>
 
         <Text style={styles.header}>Rides For You</Text>
 
-        {/* Filters */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterContainer}
-        >
-          {filters.map((filter) => (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={styles.filterContainer}>
+            {/* Ride Time filter button */}
             <TouchableOpacity
-              key={filter.value}
               style={[
                 styles.filterButton,
-                activeFilters[filter.value] === filter.label &&
-                  styles.activeFilterButton,
+                activeButtons.includes("rideTime") && styles.activeButton,
               ]}
-              onPress={(e) => handleFilterPress(filter.value, e)}
+              onPress={(event) => handleFilterPress("rideTime", event)}
             >
-              <Image source={filter.icon} style={styles.filterIcon} />
+              <Image
+                source={require("../assets/clock.png")}
+                style={styles.icon}
+              />
               <Text
                 style={[
-                  styles.filterText,
-                  activeFilters[filter.value] === filter.label &&
-                    styles.activeFilterText,
+                  activeButtons.includes("rideTime") && styles.activeButtonText,
                 ]}
               >
-                {activeFilters[filter.value]}{" "}
-                {/* Show the selected filter text */}
+                Ride Time: {activeFilters.rideTime || "Ride Time"}
               </Text>
             </TouchableOpacity>
-          ))}
+
+            {/* Time filter button */}
+            <TouchableOpacity
+              style={[
+                styles.filterButton,
+                activeButtons.includes("time") && styles.activeButton,
+              ]}
+              onPress={() => setShowTimePicker(true)}
+            >
+              <Image
+                source={require("../assets/clock.png")}
+                style={styles.icon}
+              />
+              <Text
+                style={[
+                  activeButtons.includes("time") && styles.activeButtonText,
+                ]}
+              >
+                Time: {selectedTime || "Time"}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Distance filter button */}
+            <TouchableOpacity
+              style={[
+                styles.filterButton,
+                activeButtons.includes("distance") && styles.activeButton,
+              ]}
+              onPress={(event) => handleFilterPress("distance", event)}
+            >
+              <Image
+                source={require("../assets/loc.png")}
+                style={styles.icon}
+              />
+              <Text
+                style={[
+                  activeButtons.includes("distance") && styles.activeButtonText,
+                ]}
+              >
+                Distance: {activeFilters.distance || "Distance"}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Available Seats filter button */}
+            <TouchableOpacity
+              style={[
+                styles.filterButton,
+                activeButtons.includes("availableSeats") && styles.activeButton,
+              ]}
+              onPress={(event) => handleFilterPress("availableSeats", event)}
+            >
+              <Image
+                source={require("../assets/seat_icon.png")}
+                style={styles.icon}
+              />
+              <Text
+                style={[
+                  activeButtons.includes("availableSeats") &&
+                    styles.activeButtonText,
+                ]}
+              >
+                Available Seats:{" "}
+                {activeFilters.availableSeats || "Available Seats"}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Gender filter button */}
+            <TouchableOpacity
+              style={[
+                styles.filterButton,
+                activeButtons.includes("gender") && styles.activeButton,
+              ]}
+              onPress={(event) => handleFilterPress("gender", event)}
+            >
+              <Image
+                source={require("../assets/gender.png")}
+                style={styles.icon}
+              />
+              <Text
+                style={[
+                  activeButtons.includes("gender") && styles.activeButtonText,
+                ]}
+              >
+                Gender: {activeFilters.gender || "Gender"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Dropdown for Ride Time */}
+          {dropdownVisible && (
+            <View style={styles.dropdownMenu}>
+              {["Morning", "Afternoon", "Evening"].map((time) => (
+                <TouchableOpacity
+                  key={time}
+                  style={styles.dropdownItem}
+                  onPress={() => handleRideTimeSelect(time)}
+                >
+                  <Text style={styles.dropdownText}>{time}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {/* Dropdown for other filters */}
+          {showDropdown && (
+            <View
+              style={[
+                styles.dropdownContainer,
+                { top: dropdownPosition.y + 10, left: dropdownPosition.x - 50 },
+              ]}
+            >
+              {dropdownOptions.map((option, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.dropdownItem}
+                  onPress={() => handleDropdownSelect(option)}
+                >
+                  <Text style={styles.dropdownText}>{option}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {/* Time Picker */}
+          {showTimePicker && (
+            <DateTimePicker
+              value={new Date()}
+              mode="time"
+              display="default"
+              onChange={handleTimeChange}
+            />
+          )}
+
+          {showCalendar && (
+            <Modal transparent={true} animationType="slide">
+              <View style={styles.modalContainer}>
+                <View style={styles.calendarContainer}>
+                  <DateTimePicker
+                    value={selectedDate}
+                    mode="date"
+                    display="default"
+                    minimumDate={new Date()}
+                    onChange={handleDateChange}
+                  />
+                </View>
+              </View>
+            </Modal>
+          )}
+
+          {dropdownVisible && (
+            <View style={styles.dropdownMenu}>
+              {dropdownOptions.map((option, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.dropdownOption}
+                  onPress={() => handleDropdownSelect(option)}
+                >
+                  <Text style={styles.dropdownOptionText}>{option}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </ScrollView>
 
-        {/* Dropdown */}
         {showDropdown && (
           <View
             style={[
@@ -402,6 +625,25 @@ const RideList = ({ route }) => {
               { top: dropdownPosition.y + 10, left: dropdownPosition.x - 50 },
             ]}
           >
+            {/* Modal for Time Picker */}
+            {showTimePicker && (
+              <DateTimePicker
+                value={new Date()}
+                mode="time"
+                display="spinner"
+                onChange={handleTimeChange}
+              />
+            )}
+
+            {/* Modal for Calendar */}
+            {showCalendar && (
+              <DateTimePicker
+                value={selectedDate}
+                mode="date"
+                display="calendar"
+                onChange={handleDateChange}
+              />
+            )}
             {dropdownOptions.map((option, index) => (
               <TouchableOpacity
                 key={index}
@@ -414,23 +656,6 @@ const RideList = ({ route }) => {
           </View>
         )}
 
-        {/* Calendar Modal */}
-        {showCalendar && (
-          <Modal transparent={true} animationType="slide">
-            <View style={styles.modalContainer}>
-              <View style={styles.calendarContainer}>
-                <DateTimePicker
-                  value={selectedDate}
-                  mode="date"
-                  display="default"
-                  minimumDate={new Date()}
-                  onChange={handleDateChange}
-                />
-              </View>
-            </View>
-          </Modal>
-        )}
-
         <View style={styles.card}>
           <View style={styles.row}>
             <Image
@@ -438,13 +663,13 @@ const RideList = ({ route }) => {
               style={styles.profilePic}
             />
             <View style={styles.info}>
-              <Text style={styles.name}>{ride.name}</Text>
+              <Text style={styles.name}>Driver name</Text>
               <View style={styles.ratingRow}>
-                <Text style={styles.rating}>⭐ {ride.rating}</Text>
-                <Text style={styles.ratingCount}>({ride.ratingCount})</Text>
+                <Text style={styles.rating}>⭐ </Text>
+                <Text style={styles.ratingCount}></Text>
               </View>
-              <Text style={styles.location}>{ride.pickup}</Text>
-              <Text style={styles.location}>{ride.destination}</Text>
+              <Text style={styles.location}>Origin</Text>
+              <Text style={styles.location}>Destination</Text>
             </View>
             <View style={styles.timeContainer}>
               <Text style={styles.time}>{ride.time}</Text>
@@ -453,15 +678,15 @@ const RideList = ({ route }) => {
           <View style={styles.detailsRow}>
             <View style={styles.detail}>
               <Text style={styles.detailLabel}>Price</Text>
-              <Text style={styles.detailValue}>{ride.price}</Text>
+              <Text style={styles.detailValue}>amt</Text>
             </View>
             <View style={styles.detail}>
               <Text style={styles.detailLabel}>Vehicle</Text>
-              <Text style={styles.detailValue}>{ride.vehicle}</Text>
+              <Text style={styles.detailValue}>vehicle name</Text>
             </View>
             <View style={styles.detail}>
               <Text style={styles.detailLabel}>Time</Text>
-              <Text style={styles.detailValue}>{ride.rideTime}</Text>
+              <Text style={styles.detailValue}>time</Text>
             </View>
           </View>
           <TouchableOpacity
@@ -491,7 +716,7 @@ const RideList = ({ route }) => {
       price: "₹200",
       vehicle: "Silver Suzuki WagonR",
       rideTime: "5:20pm",
-      time: "Coming in 5 mins",
+      time: "duration",
     },
   ];
 
@@ -501,7 +726,7 @@ const RideList = ({ route }) => {
         <TouchableOpacity onPress={toggleMenu}>
           <Image
             source={require("../assets/nav_icon.png")}
-            style={styles.icon}
+            style={styles.topicon}
           />
         </TouchableOpacity>
         {isMenuVisible && (
@@ -552,7 +777,7 @@ const RideList = ({ route }) => {
         <TouchableOpacity onPress={openNotifications}>
           <Image
             source={require("../assets/Bell_icon.png")}
-            style={styles.icon}
+            style={styles.topicon}
           />
         </TouchableOpacity>
       </View>
@@ -563,7 +788,7 @@ const RideList = ({ route }) => {
         keyExtractor={(item) => item.id}
       />
       <View style={styles.bottomNav}>
-        <TravelerBottomNav activeTab={activeTab} onTabPress={handleTabPress} />
+        <BottomNav activeTab={activeTab} onTabPress={handleTabPress} />
       </View>
     </View>
   );
@@ -586,7 +811,8 @@ const styles = StyleSheet.create({
   },
   filterContainer: {
     flexDirection: "row",
-    marginBottom: 16,
+    marginBottom: 15,
+    marginTop: 5,
   },
   filterButton: {
     flexDirection: "row",
@@ -629,10 +855,30 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: "#ccc",
   },
+
+  filterButton: {
+    padding: 10,
+    marginHorizontal: 5,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 19,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  activeButton: {
+    backgroundColor: "#000",
+  },
+  activeButtonText: {
+    color: "#fff",
+  },
   icon: {
+    width: 17,
+    height: 17,
+    marginRight: 3,
+  },
+  topicon: {
     width: 40,
     height: 40,
-    marginTop: 30,
+    marginTop: 20,
   },
   dropdownContainer: {
     position: "absolute",
@@ -780,15 +1026,13 @@ const styles = StyleSheet.create({
     left: 0,
     alignItems: "center",
   },
-
   horizontalRuler2: {
-    width: "150%", // Adjust this to control the width of the ruler
+    width: "150%",
     height: 1,
-    backgroundColor: "#d3d3d3", // Grey color
-    alignSelf: "center", // Center align the ruler
-    marginVertical: 10, // Optional: Adjust vertical spacing
+    backgroundColor: "#d3d3d3",
+    alignSelf: "center",
+    marginVertical: 10,
   },
-
   profileImage: {
     width: 80,
     height: 80,
@@ -801,7 +1045,6 @@ const styles = StyleSheet.create({
     fontFamily: "poppins",
     marginTop: "20%",
   },
-
   menuOptionText: {
     fontSize: 18,
     alignContent: "center",

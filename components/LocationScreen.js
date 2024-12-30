@@ -47,6 +47,10 @@ const LocationScreen = () => {
     navigation.navigate("ChooseRole");
   };
 
+  const handleSkipPress = () => {
+    alert("Without granting permission, you cannot proceed");
+  };
+
   return (
     <ImageBackground source={mapBackground} style={styles.background}>
       <View style={styles.overlay} />
@@ -62,7 +66,7 @@ const LocationScreen = () => {
           <TouchableOpacity style={styles.button} onPress={handleLocationPress}>
             <Text style={styles.buttonText}>Use my location</Text>
           </TouchableOpacity>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={handleSkipPress}>
             <Text style={styles.skipText}>Skip for now</Text>
           </TouchableOpacity>
         </View>
@@ -70,7 +74,6 @@ const LocationScreen = () => {
     </ImageBackground>
   );
 };
-
 const styles = StyleSheet.create({
   background: {
     flex: 1,

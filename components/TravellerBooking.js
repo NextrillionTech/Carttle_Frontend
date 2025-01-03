@@ -287,7 +287,7 @@ const TravellerBooking = ({ route }) => {
         <View style={styles.cardContent}>
           <View style={styles.driverInfo}>
             <Image
-              source={require("../assets/driver_avatar.png")}
+              source={require("../assets/driver_avatar.jpg")}
               style={styles.driverAvatar}
             />
             <View>
@@ -298,7 +298,7 @@ const TravellerBooking = ({ route }) => {
               <Text style={styles.driverLocation}>⭐4.9 (531 reviews)</Text>
             </View>
             <Image
-              source={require("../assets/driver_car.png")}
+              source={require("../assets/driver_car.jpg")}
               style={styles.carImage}
             />
           </View>

@@ -663,7 +663,7 @@ const RideList = ({ route }) => {
         <View style={styles.card}>
           <View style={styles.row}>
             <Image
-              source={require("../assets/driver_avatar.png")}
+              source={require("../assets/driver_avatar.jpg")}
               style={styles.profilePic}
             />
             <View style={styles.info}>

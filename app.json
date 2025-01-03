@@ -27,11 +27,11 @@
     "plugins": [
       "expo-font"
     ],
+    "owner": "nextrillion-tech",
     "extra": {
       "eas": {
-        "projectId": "12e03a48-a5e2-46bd-80e7-cb0f4655c5d5"
+        "projectId": "4fe049c9-e230-4f05-9200-d290def19ab6"
       }
-    },
-    "owner": "trisheta"
+    }
   }
 }

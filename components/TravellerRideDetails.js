@@ -39,13 +39,13 @@ const TravellerRideDetails = () => {
         <View style={styles.horizontalRuler} />
         
         <View style={styles.driverCard}>
-          <Image source={require('../assets/driver_avatar.png')} style={styles.driverImage} />
+          <Image source={require('../assets/driver_avatar.jpg')} style={styles.driverImage} />
           <View style={styles.driverDetails}>
             <Text style={styles.carDetails}>HR26EM3749 (WagonR)</Text>
             <Text style={styles.driverLocation}>Udyog Vihar, Phase 1, 122001</Text>
             <Text style={styles.ratingText}>⭐ 4.9 (531 reviews)</Text>
           </View>
-          <Image source={require('../assets/driver_car.png')} style={styles.carImage} />
+          <Image source={require('../assets/driver_car.jpg')} style={styles.carImage} />
         </View><View style={styles.horizontalRuler} />
 
         <View style={styles.bookingDetails}>

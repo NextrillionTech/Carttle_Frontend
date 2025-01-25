@@ -42,7 +42,7 @@ const ChangePasswordScreen = ({ navigation }) => {
 
     try {
       const response = await axios.post(
-        "http://192.168.43.235:3000/change-password",
+        "http://13.203.66.17/change-password",
         {
           userId,
           oldPassword,

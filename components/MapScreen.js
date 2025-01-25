@@ -198,7 +198,7 @@ const MapScreen = ({ route }) => {
 
     try {
       const response = await axios.get(
-        `http://192.168.43.235:3000/search-car-image?carName=${rcModel}`
+        `http://13.203.66.17/search-car-image?carName=${rcModel}`
       );
 
       if (response.status === 200) {
@@ -624,7 +624,7 @@ const MapScreen = ({ route }) => {
 
       // Sending the data to API
       const response = await axios.post(
-        "http://192.168.29.99:3000/create-ride",
+        "http://13.203.66.17/create-ride",
         dataToSend
       );
       console.log("Response:", response.data);

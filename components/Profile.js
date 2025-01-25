@@ -76,7 +76,7 @@ export default function Profile() {
       const fetchProfileData = async () => {
         try {
           const response = await fetch(
-            `http://192.168.43.235:3000/user-info/${userId}`
+            `http://13.203.66.17/user-info/${userId}`
           );
 
           // Check if the response is not okay (e.g., 404 or 500)
@@ -243,7 +243,7 @@ export default function Profile() {
     }
 
     try {
-      const response = await fetch("http://192.168.43.235:3000/update-user", {
+      const response = await fetch("http://13.203.66.17/update-user", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

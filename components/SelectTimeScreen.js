@@ -441,14 +441,14 @@ const SelectTimeScreen = ({ navigation, route }) => {
       try {
         // Call the distance matrix API
         const response = await axios.post(
-          "http://192.168.29.99:3000/distanceMatrix",
+          "http://13.203.66.17/distanceMatrix",
           data
         );
         console.log("Distance:", response.data.distance);
 
         // Call the cost calculator API
         const costResponse = await axios.post(
-          "http://192.168.29.99:3000/calculate-cost",
+          "http://13.203.66.17/calculate-cost",
           {
             state: stateName,
             origin: `${userLocation.latitude},${userLocation.longitude}`,
@@ -562,14 +562,14 @@ const SelectTimeScreen = ({ navigation, route }) => {
     try {
       // Call the distance matrix API
       const response = await axios.post(
-        "http://192.168.29.99:3000/distanceMatrix",
+        "http://13.203.66.17/distanceMatrix",
         data
       );
       console.log("Distance:", response.data.distance);
 
       // Call the cost calculator API
       const costResponse = await axios.post(
-        "http://192.168.29.99:3000/calculate-cost",
+        "http://13.203.66.17/calculate-cost",
         {
           state: stateName,
           origin: `${currentLocLatitude},${currentLocLongitude}`, // Use origin from current location variables

@@ -385,7 +385,7 @@ const RideList = ({ route }) => {
         JSON.stringify(requestBody, null, 2)
       );
 
-      const response = await fetch("http://192.168.29.99:3000/rides/search", {
+      const response = await fetch("http://13.203.66.17/rides/search", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

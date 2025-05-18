@@ -42,7 +42,7 @@ const ChangePasswordScreen = ({ navigation }) => {
 
     try {
       const response = await axios.post(
-        "http://13.203.66.17/change-password",
+        "https://carttle-backend.onrender.com/change-password",
         {
           userId,
           oldPassword,

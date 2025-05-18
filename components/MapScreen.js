@@ -198,7 +198,7 @@ const MapScreen = ({ route }) => {
 
     try {
       const response = await axios.get(
-        `http://13.203.66.17/search-car-image?carName=${rcModel}`
+        `https://carttle-backend.onrender.com/search-car-image?carName=${rcModel}`
       );
 
       if (response.status === 200) {
@@ -624,7 +624,7 @@ const MapScreen = ({ route }) => {
 
       // Sending the data to API
       const response = await axios.post(
-        "http://13.203.66.17/create-ride",
+        "https://carttle-backend.onrender.com/create-ride",
         dataToSend
       );
       console.log("Response:", response.data);

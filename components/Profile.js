@@ -76,7 +76,7 @@ export default function Profile() {
       const fetchProfileData = async () => {
         try {
           const response = await fetch(
-            `http://13.203.66.17/user-info/${userId}`
+            `https://carttle-backend.onrender.com/user-info/${userId}`
           );
 
           // Check if the response is not okay (e.g., 404 or 500)
@@ -243,7 +243,7 @@ export default function Profile() {
     }
 
     try {
-      const response = await fetch("http://13.203.66.17/update-user", {
+      const response = await fetch("https://carttle-backend.onrender.com/update-user", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
